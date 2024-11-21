@@ -35,6 +35,14 @@ run:
 run-job:
 	go run cmd/reconcile-job/main.go
 
+.PHONY: build
+build:
+	go build -o output/api cmd/api/main.go
+
+.PHONY: build-reconcile-job
+build-reconcile-job:
+	go build -o output/reconcile-job cmd/reconcile-job/main.go
+
 .PHONY: test
 test:
 	go test -v ./...
