@@ -1,8 +1,10 @@
-@startuml
+@startuml Recon Request Flow
 
 title Recon Request Flow
 
 User -> ReconApi: POST /reconciliations
+ReconApi -> FileStorage: save file
+FileStorage --> ReconApi
 ReconApi -> DB: save recon jobs
 DB --> ReconApi: return recon job id
 ReconApi --> User: return 201 with recon job id
