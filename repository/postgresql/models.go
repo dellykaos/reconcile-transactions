@@ -11,14 +11,14 @@ import (
 )
 
 type ReconciliationJob struct {
-	ID                       int64
-	Status                   string
-	SystemTransactionCsvPath string
-	BankTransactionCsvPaths  pgtype.JSONB
-	DiscrepancyThreshold     float64
-	StartDate                time.Time
-	EndDate                  time.Time
-	Result                   pgtype.JSONB
-	CreatedAt                time.Time
-	UpdatedAt                time.Time
+	ID                       int64        `db:"id"`
+	Status                   string       `db:"status"`
+	SystemTransactionCsvPath string       `db:"system_transaction_csv_path"`
+	BankTransactionCsvPaths  pgtype.JSONB `db:"bank_transaction_csv_paths"`
+	DiscrepancyThreshold     float64      `db:"discrepancy_threshold"`
+	StartDate                time.Time    `db:"start_date"`
+	EndDate                  time.Time    `db:"end_date"`
+	Result                   pgtype.JSONB `db:"result"`
+	CreatedAt                time.Time    `db:"created_at"`
+	UpdatedAt                time.Time    `db:"updated_at"`
 }
