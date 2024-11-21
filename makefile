@@ -26,3 +26,15 @@ setup-db:
 drop-db:
 	@echo "Dropping database '$(DB_NAME)'..."
 	@PGPASSWORD=$(DB_PASS) psql -U $(DB_USER) -h $(DB_HOST) -p $(DB_PORT) -c "DROP DATABASE $(DB_NAME);" || echo "Database '$(DB_NAME)' does not exist."
+
+.PHONY: run
+run:
+	go run cmd/api/main.go
+
+.PHONY: run-reconcile-job
+run-job:
+	go run cmd/reconcile-job/main.go
+
+.PHONY: test
+test:
+	go test -v ./...
