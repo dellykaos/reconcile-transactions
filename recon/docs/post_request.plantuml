@@ -1,0 +1,10 @@
+@startuml
+
+title Recon Request Flow
+
+User -> ReconApi: POST /recon
+ReconApi -> DB: save recon jobs
+DB --> ReconApi: return recon job id
+ReconApi --> User: return 200
+
+@enduml

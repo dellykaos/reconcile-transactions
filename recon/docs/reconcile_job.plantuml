@@ -1,0 +1,18 @@
+@startuml
+
+title Reconcile Job Flow
+
+ReconCronJob -> DB: get all recon jobs
+DB --> ReconCronJob: return all recon jobs
+alt no recon jobs
+  ReconCronJob --> ReconCronJob: exit
+else recon jobs found
+  loop for each recon job
+    ReconCronJob -> ReconCronJob: process recon job
+    ReconCronJob -> DB: update recon job status to processing
+    DB --> ReconCronJob: return updated recon job
+  end
+  ReconCronJob --> ReconCronJob: exit
+end
+
+@enduml

@@ -1,0 +1,14 @@
+@startuml
+
+title Get Status Request Recon Flow
+
+User -> ReconApi: GET /recon/{job_id}
+ReconApi -> DB: get recon job status
+DB --> ReconApi: return recon job status
+alt job id not found
+  ReconApi --> User: return 404
+else job id found
+  ReconApi --> User: return 200
+end
+
+@enduml
