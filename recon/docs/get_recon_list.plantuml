@@ -1,0 +1,10 @@
+@startuml
+
+title Get Reconciliation List Flow
+
+User -> ReconApi: GET /reconciliations
+ReconApi -> DB: get all recon jobs
+DB --> ReconApi: return all recon jobs
+ReconApi --> User: return 200 with recon job list
+
+@enduml

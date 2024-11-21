@@ -2,9 +2,9 @@
 
 title Recon Request Flow
 
-User -> ReconApi: POST /recon
+User -> ReconApi: POST /reconciliations
 ReconApi -> DB: save recon jobs
 DB --> ReconApi: return recon job id
-ReconApi --> User: return 200
+ReconApi --> User: return 201 with recon job id
 
 @enduml

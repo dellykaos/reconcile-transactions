@@ -1,0 +1,18 @@
+@startuml
+
+title Get Reconciliation Result Flow
+
+User -> ReconApi: GET /reconciliations/{job_id}
+ReconApi -> DB: get recon job result
+DB --> ReconApi: return recon job result
+alt recon job not found
+  ReconApi --> User: return 404
+else recon job found
+  alt job status is processing
+    ReconApi --> User: return 200 with status processing
+  else job status is done
+    ReconApi --> User: return 200 with recon result
+  end
+end
+
+@enduml
