@@ -2,8 +2,6 @@ package entity
 
 import (
 	"time"
-
-	"github.com/shopspring/decimal"
 )
 
 // TransactionType is a custom type for transaction type
@@ -18,8 +16,8 @@ const (
 
 // Transaction hold transaction data
 type Transaction struct {
-	ID     string
-	Amount decimal.Decimal
-	Type   TransactionType
-	Time   time.Time
+	ID     string          `json:"id"`
+	Amount float64         `json:"amount"`
+	Type   TransactionType `json:"type"`
+	Time   time.Time       `json:"time"`
 }

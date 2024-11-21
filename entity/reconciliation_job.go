@@ -1,6 +1,8 @@
 package entity
 
-import "time"
+import (
+	"time"
+)
 
 // ReconciliationJobStatus is a custom type for reconciliation job status
 type ReconciliationJobStatus string
@@ -22,13 +24,24 @@ type BankTransactionCsv struct {
 	FilePath string
 }
 
+// ReconciliationResult hold reconciliation result data
+type ReconciliationResult struct {
+	TotalTransactionProcessed int           `json:"total_transaction_processed"`
+	TotalTransactionMatched   int           `json:"total_transaction_matched"`
+	TotalTransactionUnmatched int           `json:"total_transaction_unmatched"`
+	TotalDiscrepancyAmount    float64       `json:"total_discrepancy_amount"`
+	MissingTransactions       []Transaction `json:"missing_transactions"`
+	MissingBankTransactions   map[string][]Transaction
+}
+
 // ReconciliationJob hold reconciliation job data
 type ReconciliationJob struct {
-	ID                       int
+	ID                       int64
 	Status                   ReconciliationJobStatus
 	SystemTransactionCsvPath string
 	BankTransactionCsvPaths  []BankTransactionCsv
 	DiscrepancyThreshold     float32
+	Result                   ReconciliationResult
 	StartDate                time.Time
 	EndDate                  time.Time
 	CreatedAt                time.Time
