@@ -8,6 +8,7 @@ require (
 	github.com/jackc/pgx/v4 v4.18.3
 	github.com/joeshaw/envdecode v0.0.0-20200121155833-099f1fc765bd
 	github.com/joho/godotenv v1.5.1
+	github.com/julienschmidt/httprouter v1.3.0
 	github.com/pkg/errors v0.8.1
 	github.com/stretchr/testify v1.9.0
 	go.uber.org/mock v0.5.0
