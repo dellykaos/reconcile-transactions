@@ -9,6 +9,7 @@ import (
 // Config holds the configuration for the application.
 type Config struct {
 	Database DatabaseConfig
+	Server   ServerConfig
 }
 
 // DatabaseConfig holds the configuration for the database.
@@ -18,6 +19,11 @@ type DatabaseConfig struct {
 	User     string `env:"DB_USER,required"`
 	Password string `env:"DB_PASS,required"`
 	Name     string `env:"DB_NAME,required"`
+}
+
+// ServerConfig holds the configuration for the server.
+type ServerConfig struct {
+	Port int `env:"SERVER_PORT,default=8080"`
 }
 
 // NewConfig creates an instance of Config.
