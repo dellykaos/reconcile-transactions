@@ -15,6 +15,96 @@ import (
 	"go.uber.org/mock/gomock"
 )
 
+var (
+	id         = int64(1)
+	lastMonth  = time.Now().AddDate(0, -1, 0)
+	yesterday  = time.Now().AddDate(0, 0, -1)
+	now        = time.Now()
+	dbReconJob = dbgen.ReconciliationJob{
+		ID:                       id,
+		Status:                   "SUCCESS",
+		SystemTransactionCsvPath: "path_to_file",
+		DiscrepancyThreshold:     0.1,
+		StartDate:                lastMonth,
+		EndDate:                  yesterday,
+		CreatedAt:                now,
+		UpdatedAt:                now,
+		BankTransactionCsvPaths: pgtype.JSONB{
+			Status: pgtype.Present,
+			Bytes:  []byte(`[{"bank_name": "BCA", "file_path": "path_to_file_bca"}]`),
+		},
+		Result: pgtype.JSONB{
+			Status: pgtype.Present,
+			Bytes: []byte(`
+			{
+				"total_transaction_processed": 10,
+				"total_transaction_matched": 5,
+				"total_transaction_unmatched": 5,
+				"total_discrepancy_amount": 1000,
+				"missing_transactions": [
+					{
+						"id": "1",
+						"amount": 1000,
+						"type":
+						"DEBIT",
+						"time": "2021-01-02T00:00:00Z"
+					}
+				],
+				"missing_bank_transactions": {
+					"BCA": [
+						{
+							"id": "1",
+							"amount": 1000,
+							"type": "DEBIT",
+							"time": "2021-01-01T00:00:00Z"
+						}
+					]
+				}
+			}`),
+		},
+	}
+	entityReconJob = &entity.ReconciliationJob{
+		ID:                       id,
+		Status:                   entity.ReconciliationJobStatus("SUCCESS"),
+		SystemTransactionCsvPath: "path_to_file",
+		DiscrepancyThreshold:     0.1,
+		StartDate:                lastMonth,
+		EndDate:                  yesterday,
+		CreatedAt:                now,
+		UpdatedAt:                now,
+		BankTransactionCsvPaths: []entity.BankTransactionCsv{
+			{
+				BankName: "BCA",
+				FilePath: "path_to_file_bca",
+			},
+		},
+		Result: entity.ReconciliationResult{
+			TotalTransactionProcessed: 10,
+			TotalTransactionMatched:   5,
+			TotalTransactionUnmatched: 5,
+			TotalDiscrepancyAmount:    1000,
+			MissingTransactions: []entity.Transaction{
+				{
+					ID:     "1",
+					Amount: 1000,
+					Type:   entity.TxTypeDebit,
+					Time:   time.Date(2021, 1, 2, 0, 0, 0, 0, time.UTC),
+				},
+			},
+			MissingBankTransactions: map[string][]entity.Transaction{
+				"BCA": {
+					{
+						ID:     "1",
+						Amount: 1000,
+						Type:   entity.TxTypeDebit,
+						Time:   time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC),
+					},
+				},
+			},
+		},
+	}
+)
+
 type FinderTestSuite struct {
 	suite.Suite
 	repo *mock_reconciliatonjob.MockFinderRepository
@@ -33,94 +123,10 @@ func TestFinderTestSuite(t *testing.T) {
 
 func (s *FinderTestSuite) TestFindByID() {
 	ctx := context.Background()
-	id := int64(1)
-	lastMonth := time.Now().AddDate(0, -1, 0)
-	yesterday := time.Now().AddDate(0, 0, -1)
 
 	s.Run("success", func() {
-		rj := dbgen.ReconciliationJob{
-			ID:                       id,
-			Status:                   "SUCCESS",
-			SystemTransactionCsvPath: "path_to_file",
-			DiscrepancyThreshold:     0.1,
-			StartDate:                lastMonth,
-			EndDate:                  yesterday,
-			CreatedAt:                time.Now(),
-			UpdatedAt:                time.Now(),
-			BankTransactionCsvPaths: pgtype.JSONB{
-				Status: pgtype.Present,
-				Bytes:  []byte(`[{"bank_name": "BCA", "file_path": "path_to_file_bca"}]`),
-			},
-			Result: pgtype.JSONB{
-				Status: pgtype.Present,
-				Bytes: []byte(`
-				{
-					"total_transaction_processed": 10,
-					"total_transaction_matched": 5,
-					"total_transaction_unmatched": 5,
-					"total_discrepancy_amount": 1000,
-					"missing_transactions": [
-						{
-							"id": "1",
-							"amount": 1000,
-							"type":
-							"DEBIT",
-							"time": "2021-01-02T00:00:00Z"
-						}
-					],
-					"missing_bank_transactions": {
-						"BCA": [
-							{
-								"id": "1",
-								"amount": 1000,
-								"type": "DEBIT",
-								"time": "2021-01-01T00:00:00Z"
-							}
-						]
-					}
-				}`),
-			},
-		}
-		expectedRJ := &entity.ReconciliationJob{
-			ID:                       id,
-			Status:                   entity.ReconciliationJobStatus("SUCCESS"),
-			SystemTransactionCsvPath: "path_to_file",
-			DiscrepancyThreshold:     0.1,
-			StartDate:                lastMonth,
-			EndDate:                  yesterday,
-			CreatedAt:                rj.CreatedAt,
-			UpdatedAt:                rj.UpdatedAt,
-			BankTransactionCsvPaths: []entity.BankTransactionCsv{
-				{
-					BankName: "BCA",
-					FilePath: "path_to_file_bca",
-				},
-			},
-			Result: entity.ReconciliationResult{
-				TotalTransactionProcessed: 10,
-				TotalTransactionMatched:   5,
-				TotalTransactionUnmatched: 5,
-				TotalDiscrepancyAmount:    1000,
-				MissingTransactions: []entity.Transaction{
-					{
-						ID:     "1",
-						Amount: 1000,
-						Type:   entity.TxTypeDebit,
-						Time:   time.Date(2021, 1, 2, 0, 0, 0, 0, time.UTC),
-					},
-				},
-				MissingBankTransactions: map[string][]entity.Transaction{
-					"BCA": {
-						{
-							ID:     "1",
-							Amount: 1000,
-							Type:   entity.TxTypeDebit,
-							Time:   time.Date(2021, 1, 1, 0, 0, 0, 0, time.UTC),
-						},
-					},
-				},
-			},
-		}
+		rj := dbReconJob
+		expectedRJ := entityReconJob
 
 		s.repo.EXPECT().GetReconciliationJobById(ctx, id).Return(rj, nil)
 
@@ -133,6 +139,39 @@ func (s *FinderTestSuite) TestFindByID() {
 		s.repo.EXPECT().GetReconciliationJobById(ctx, id).Return(dbgen.ReconciliationJob{}, assert.AnError)
 
 		res, err := s.svc.FindByID(ctx, id)
+		s.Error(err)
+		s.Nil(res)
+	})
+}
+
+func (s *FinderTestSuite) TestFindAll() {
+	ctx := context.Background()
+	limit := int32(10)
+	offset := int32(0)
+
+	s.Run("success", func() {
+		rjs := []dbgen.ReconciliationJob{dbReconJob}
+		expectedRJs := []*entity.ReconciliationJob{entityReconJob}
+
+		params := dbgen.ListReconciliationJobsParams{
+			Limit:  limit,
+			Offset: offset,
+		}
+		s.repo.EXPECT().ListReconciliationJobs(ctx, params).Return(rjs, nil)
+
+		res, err := s.svc.FindAll(ctx, limit, offset)
+		s.NoError(err)
+		s.Equal(expectedRJs, res)
+	})
+
+	s.Run("error", func() {
+		params := dbgen.ListReconciliationJobsParams{
+			Limit:  limit,
+			Offset: offset,
+		}
+		s.repo.EXPECT().ListReconciliationJobs(ctx, params).Return([]dbgen.ReconciliationJob{}, assert.AnError)
+
+		res, err := s.svc.FindAll(ctx, limit, offset)
 		s.Error(err)
 		s.Nil(res)
 	})
