@@ -12,6 +12,17 @@ import (
 	"github.com/jackc/pgtype"
 )
 
+const countReconciliationJobs = `-- name: CountReconciliationJobs :one
+SELECT COUNT(1) FROM reconciliation_jobs
+`
+
+func (q *Queries) CountReconciliationJobs(ctx context.Context) (int64, error) {
+	row := q.db.QueryRow(ctx, countReconciliationJobs)
+	var count int64
+	err := row.Scan(&count)
+	return count, err
+}
+
 const createReconciliationJob = `-- name: CreateReconciliationJob :one
 INSERT INTO reconciliation_jobs (status, system_transaction_csv_path, bank_transaction_csv_paths, discrepancy_threshold, start_date, end_date) VALUES ('PENDING', $1, $2, $3, $4, $5) RETURNING id, status, system_transaction_csv_path, bank_transaction_csv_paths, discrepancy_threshold, start_date, end_date, result, created_at, updated_at
 `
@@ -97,12 +108,56 @@ func (q *Queries) GetReconciliationJobById(ctx context.Context, id int64) (Recon
 	return i, err
 }
 
-const listReconciliationJobs = `-- name: ListReconciliationJobs :many
-SELECT id, status, system_transaction_csv_path, bank_transaction_csv_paths, discrepancy_threshold, start_date, end_date, result, created_at, updated_at FROM reconciliation_jobs WHERE status = 'PENDING' ORDER BY created_at ASC
+const listPendingReconciliationJobs = `-- name: ListPendingReconciliationJobs :many
+SELECT id, status, system_transaction_csv_path, bank_transaction_csv_paths, discrepancy_threshold, start_date, end_date, result, created_at, updated_at FROM reconciliation_jobs
+WHERE status = 'PENDING'
+ORDER BY created_at DESC
 `
 
-func (q *Queries) ListReconciliationJobs(ctx context.Context) ([]ReconciliationJob, error) {
-	rows, err := q.db.Query(ctx, listReconciliationJobs)
+func (q *Queries) ListPendingReconciliationJobs(ctx context.Context) ([]ReconciliationJob, error) {
+	rows, err := q.db.Query(ctx, listPendingReconciliationJobs)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []ReconciliationJob
+	for rows.Next() {
+		var i ReconciliationJob
+		if err := rows.Scan(
+			&i.ID,
+			&i.Status,
+			&i.SystemTransactionCsvPath,
+			&i.BankTransactionCsvPaths,
+			&i.DiscrepancyThreshold,
+			&i.StartDate,
+			&i.EndDate,
+			&i.Result,
+			&i.CreatedAt,
+			&i.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listReconciliationJobs = `-- name: ListReconciliationJobs :many
+SELECT id, status, system_transaction_csv_path, bank_transaction_csv_paths, discrepancy_threshold, start_date, end_date, result, created_at, updated_at FROM reconciliation_jobs
+ORDER BY id DESC
+LIMIT $1 OFFSET $2
+`
+
+type ListReconciliationJobsParams struct {
+	Limit  int32 `db:"limit"`
+	Offset int32 `db:"offset"`
+}
+
+func (q *Queries) ListReconciliationJobs(ctx context.Context, arg ListReconciliationJobsParams) ([]ReconciliationJob, error) {
+	rows, err := q.db.Query(ctx, listReconciliationJobs, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}

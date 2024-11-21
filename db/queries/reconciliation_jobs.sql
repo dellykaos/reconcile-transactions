@@ -1,5 +1,15 @@
 -- name: ListReconciliationJobs :many
-SELECT * FROM reconciliation_jobs WHERE status = 'PENDING' ORDER BY created_at ASC;
+SELECT * FROM reconciliation_jobs
+ORDER BY id DESC
+LIMIT $1 OFFSET $2;
+
+-- name: CountReconciliationJobs :one
+SELECT COUNT(1) FROM reconciliation_jobs;
+
+-- name: ListPendingReconciliationJobs :many
+SELECT * FROM reconciliation_jobs
+WHERE status = 'PENDING'
+ORDER BY created_at DESC;
 
 -- name: GetReconciliationJobById :one
 SELECT * FROM reconciliation_jobs WHERE id = $1;
