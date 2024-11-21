@@ -2,9 +2,11 @@ package reconciliatonjob
 
 import (
 	"context"
+	"errors"
 
 	"github.com/delly/amartha/entity"
 	dbgen "github.com/delly/amartha/repository/postgresql"
+	"github.com/jackc/pgx/v4"
 )
 
 // Finder is a contract to find reconciliation job
@@ -35,6 +37,9 @@ func NewFinderService(repo FinderRepository) *FinderService {
 func (s *FinderService) FindByID(ctx context.Context, id int64) (*entity.ReconciliationJob, error) {
 	rj, err := s.repo.GetReconciliationJobById(ctx, id)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
 		return nil, err
 	}
 

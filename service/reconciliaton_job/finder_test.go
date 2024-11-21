@@ -10,6 +10,7 @@ import (
 	reconciliatonjob "github.com/delly/amartha/service/reconciliaton_job"
 	mock_reconciliatonjob "github.com/delly/amartha/test/mock/service/reconciliaton_job"
 	"github.com/jackc/pgtype"
+	"github.com/jackc/pgx/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"go.uber.org/mock/gomock"
@@ -133,6 +134,15 @@ func (s *FinderTestSuite) TestFindByID() {
 		res, err := s.svc.FindByID(ctx, id)
 		s.NoError(err)
 		s.Equal(expectedRJ, res)
+	})
+
+	s.Run("not found", func() {
+		s.repo.EXPECT().GetReconciliationJobById(ctx, id).Return(dbgen.ReconciliationJob{}, pgx.ErrNoRows)
+
+		res, err := s.svc.FindByID(ctx, id)
+
+		s.NoError(err)
+		s.Nil(res)
 	})
 
 	s.Run("error", func() {
