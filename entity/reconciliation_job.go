@@ -20,18 +20,18 @@ const (
 
 // BankTransactionCsv hold bank transaction csv data
 type BankTransactionCsv struct {
-	BankName string
-	FilePath string
+	BankName string `json:"bank_name"`
+	FilePath string `json:"file_path"`
 }
 
 // ReconciliationResult hold reconciliation result data
 type ReconciliationResult struct {
-	TotalTransactionProcessed int           `json:"total_transaction_processed"`
-	TotalTransactionMatched   int           `json:"total_transaction_matched"`
-	TotalTransactionUnmatched int           `json:"total_transaction_unmatched"`
-	TotalDiscrepancyAmount    float64       `json:"total_discrepancy_amount"`
-	MissingTransactions       []Transaction `json:"missing_transactions"`
-	MissingBankTransactions   map[string][]Transaction
+	TotalTransactionProcessed int                      `json:"total_transaction_processed"`
+	TotalTransactionMatched   int                      `json:"total_transaction_matched"`
+	TotalTransactionUnmatched int                      `json:"total_transaction_unmatched"`
+	TotalDiscrepancyAmount    float64                  `json:"total_discrepancy_amount"`
+	MissingTransactions       []Transaction            `json:"missing_transactions"`
+	MissingBankTransactions   map[string][]Transaction `json:"missing_bank_transactions"`
 }
 
 // ReconciliationJob hold reconciliation job data
