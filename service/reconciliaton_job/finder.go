@@ -29,3 +29,30 @@ type FinderService struct {
 func NewFinderService(repo FinderRepository) *FinderService {
 	return &FinderService{repo: repo}
 }
+
+// FindByID find reconciliation job by id
+func (s *FinderService) FindByID(ctx context.Context, id int64) (*entity.ReconciliationJob, error) {
+	rj, err := s.repo.GetReconciliationJobById(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	return s.convertToEntityReconciliationJob(rj), nil
+}
+
+func (s *FinderService) convertToEntityReconciliationJob(rj dbgen.ReconciliationJob) *entity.ReconciliationJob {
+	res := &entity.ReconciliationJob{
+		ID:                       rj.ID,
+		Status:                   entity.ReconciliationJobStatus(rj.Status),
+		SystemTransactionCsvPath: rj.SystemTransactionCsvPath,
+		DiscrepancyThreshold:     float32(rj.DiscrepancyThreshold),
+		StartDate:                rj.StartDate,
+		EndDate:                  rj.EndDate,
+		CreatedAt:                rj.CreatedAt,
+		UpdatedAt:                rj.UpdatedAt,
+	}
+	rj.BankTransactionCsvPaths.AssignTo(&res.BankTransactionCsvPaths)
+	rj.Result.AssignTo(&res.Result)
+
+	return res
+}
