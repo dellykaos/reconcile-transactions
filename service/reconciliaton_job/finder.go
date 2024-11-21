@@ -9,8 +9,9 @@ import (
 
 // Finder is a contract to find reconciliation job
 type Finder interface {
-	FindByID(ctx context.Context, id int64) (*entity.ReconciliationJob, error)
+	Count(ctx context.Context) (int64, error)
 	FindAll(ctx context.Context, limit, offset int32) ([]*entity.ReconciliationJob, error)
+	FindByID(ctx context.Context, id int64) (*entity.ReconciliationJob, error)
 }
 
 // FinderRepository is a contract to find reconciliation job
@@ -57,6 +58,11 @@ func (s *FinderService) FindAll(ctx context.Context, limit, offset int32) ([]*en
 	}
 
 	return res, nil
+}
+
+// Count count all reconciliation job
+func (s *FinderService) Count(ctx context.Context) (int64, error) {
+	return s.repo.CountReconciliationJobs(ctx)
 }
 
 func (s *FinderService) convertToEntityReconciliationJob(rj dbgen.ReconciliationJob) *entity.ReconciliationJob {

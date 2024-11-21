@@ -176,3 +176,25 @@ func (s *FinderTestSuite) TestFindAll() {
 		s.Nil(res)
 	})
 }
+
+func (s *FinderTestSuite) TestCount() {
+	ctx := context.Background()
+
+	s.Run("success", func() {
+		expectedCount := int64(1)
+
+		s.repo.EXPECT().CountReconciliationJobs(ctx).Return(expectedCount, nil)
+
+		res, err := s.svc.Count(ctx)
+		s.NoError(err)
+		s.Equal(expectedCount, res)
+	})
+
+	s.Run("error", func() {
+		s.repo.EXPECT().CountReconciliationJobs(ctx).Return(int64(0), assert.AnError)
+
+		res, err := s.svc.Count(ctx)
+		s.Error(err)
+		s.Zero(res)
+	})
+}
