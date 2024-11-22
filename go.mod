@@ -3,6 +3,7 @@ module github.com/delly/amartha
 go 1.23.0
 
 require (
+	github.com/h2non/filetype v1.1.3
 	github.com/jackc/pgconn v1.14.3
 	github.com/jackc/pgtype v1.14.0
 	github.com/jackc/pgx/v4 v4.18.3

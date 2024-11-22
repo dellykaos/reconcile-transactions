@@ -1,8 +1,9 @@
 package http
 
 import (
+	"bytes"
 	"errors"
-	"fmt"
+	"io"
 	"log"
 	"mime/multipart"
 	"net/http"
@@ -11,7 +12,13 @@ import (
 
 	"github.com/delly/amartha/entity"
 	reconciliatonjob "github.com/delly/amartha/service/reconciliaton_job"
+	"github.com/h2non/filetype"
 	"github.com/julienschmidt/httprouter"
+)
+
+const (
+	allowedMimeType       = "text/csv"
+	humanizeLimitFileSize = "10MB"
 )
 
 // ReconciliationJobHandler is a handler for reconciliation job
@@ -108,7 +115,8 @@ func (h *ReconciliationJobHandler) CreateReconciliationJob(w http.ResponseWriter
 }
 
 func (h *ReconciliationJobHandler) parseCreateReconciliationJobParams(r *http.Request) (*reconciliatonjob.CreateParams, error) {
-	if err := h.validateFiles(r); err != nil {
+	params, err := h.buildFileParams(r)
+	if err != nil {
 		return nil, err
 	}
 
@@ -117,70 +125,114 @@ func (h *ReconciliationJobHandler) parseCreateReconciliationJobParams(r *http.Re
 	if startDate.After(endDate) {
 		return nil, errors.New("start date must be before end date")
 	}
+	params.StartDate = startDate
+	params.EndDate = endDate
 
 	discrepancyThreshold := parseFloat32(r.FormValue("discrepancy_threshold"))
 	if discrepancyThreshold < 0 {
 		discrepancyThreshold = 0
 	}
+	params.DiscrepancyThreshold = discrepancyThreshold
 
-	return &reconciliatonjob.CreateParams{
-		StartDate:            startDate,
-		EndDate:              endDate,
-		DiscrepancyThreshold: discrepancyThreshold,
+	return params, nil
+}
+
+func (h *ReconciliationJobHandler) buildFileParams(r *http.Request) (*reconciliatonjob.CreateParams, error) {
+	if err := r.ParseMultipartForm(entity.LimitContentSize); err != nil {
+		return nil, err
+	}
+	if r.ContentLength > entity.LimitContentSize {
+		return nil, errors.New("content size more than 100mb")
+	}
+
+	file, err := h.buildSystemTrxFile(r.MultipartForm)
+	if err != nil {
+		return nil, err
+	}
+
+	h.buildBankTrxFiles(r.MultipartForm)
+
+	params := &reconciliatonjob.CreateParams{
+		SystemTransactionCsv: file,
+	}
+
+	return params, nil
+}
+
+func (h *ReconciliationJobHandler) buildSystemTrxFile(form *multipart.Form) (*reconciliatonjob.File, error) {
+	systemTrxFile := form.File["system_transaction_file"]
+	if len(systemTrxFile) == 0 {
+		return nil, errors.New("system transaction file is required")
+	}
+
+	buf, err := h.validateCSVFile(systemTrxFile[0])
+	if err != nil {
+		return nil, err
+	}
+
+	return &reconciliatonjob.File{
+		Name: systemTrxFile[0].Filename,
+		Buf:  buf,
 	}, nil
 }
 
-func (h *ReconciliationJobHandler) validateFiles(r *http.Request) error {
-	if err := r.ParseMultipartForm(entity.LimitContentSize); err != nil {
-		return err
-	}
-
-	if r.ContentLength > entity.LimitContentSize {
-		return errors.New("content size more than 100mb")
-	}
-
-	if err := h.validateSystemTrxFile(r.MultipartForm); err != nil {
-		return err
-	}
-
-	return h.validateBankTrxFile(r.MultipartForm)
-}
-
-func (h *ReconciliationJobHandler) validateSystemTrxFile(form *multipart.Form) error {
-	systemTrxFile := form.File["system_transaction_file"]
-	if len(systemTrxFile) == 0 {
-		return errors.New("system transaction file is required")
-	}
-
-	return h.validateCSVFile(systemTrxFile[0])
-}
-
-func (h *ReconciliationJobHandler) validateBankTrxFile(form *multipart.Form) error {
+func (h *ReconciliationJobHandler) buildBankTrxFiles(form *multipart.Form) ([]*reconciliatonjob.BankTransactionFile, error) {
 	bankNames := form.Value["bank_names"]
 	bankTrxFiles := form.File["bank_transaction_files"]
 	if len(bankTrxFiles) == 0 {
-		return errors.New("bank transaction files is required, at least provide one")
+		return nil, errors.New("bank transaction files is required, at least provide one")
 	}
 	if len(bankNames) != len(bankTrxFiles) {
-		return errors.New("bank names and bank transaction files length must be same")
-	}
-	for _, file := range bankTrxFiles {
-		if err := h.validateCSVFile(file); err != nil {
-			return err
-		}
+		return nil, errors.New("bank names and bank transaction files length must be same")
 	}
 
-	return nil
+	result := []*reconciliatonjob.BankTransactionFile{}
+	for idx, file := range bankTrxFiles {
+		buf, err := h.validateCSVFile(file)
+		if err != nil {
+			return nil, err
+		}
+		bankFile := &reconciliatonjob.BankTransactionFile{
+			BankName: bankNames[idx],
+			File: &reconciliatonjob.File{
+				Name: file.Filename,
+				Buf:  buf,
+			},
+		}
+		result = append(result, bankFile)
+	}
+
+	return result, nil
 }
 
-func (h *ReconciliationJobHandler) validateCSVFile(file *multipart.FileHeader) error {
+func (h *ReconciliationJobHandler) validateCSVFile(file *multipart.FileHeader) (*bytes.Buffer, error) {
 	// we can improve this by using mime type, but for the sake of simplicity we just check the extension
 	if !isCSVExtension(file.Filename) {
-		return fmt.Errorf("file %s must have a .csv extension", file.Filename)
+		return nil, ErrExtensionFileInvalid(file.Filename)
 	}
 	if file.Size > entity.LimitCSVSize {
-		return fmt.Errorf("file size %s more than 10mb", file.Filename)
+		return nil, ErrFileSizeExceedLimit(file.Filename, humanizeLimitFileSize)
 	}
 
-	return nil
+	byteFileBuf := bytes.NewBuffer(nil)
+	f, err := file.Open()
+	if err != nil {
+		return nil, ErrFileCannotBeAccessed(file.Filename)
+	}
+	defer f.Close()
+
+	if _, err = io.Copy(byteFileBuf, f); err != nil {
+		return bytes.NewBuffer(nil), ErrFileCannotBeAccessed(file.Filename)
+	}
+
+	fileType, err := filetype.Match(byteFileBuf.Bytes())
+	if err != nil {
+		return bytes.NewBuffer(nil), ErrExtensionFileUnknown(file.Filename)
+	}
+
+	if fileType.MIME.Value == allowedMimeType {
+		return bytes.NewBuffer(nil), ErrExtensionFileInvalid(file.Filename)
+	}
+
+	return byteFileBuf, nil
 }

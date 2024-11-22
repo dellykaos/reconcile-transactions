@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -98,5 +99,5 @@ func parseFloat32(str string) float32 {
 }
 
 func isCSVExtension(filename string) bool {
-	return filename[len(filename)-4:] == ".csv"
+	return strings.ToLower(filename[len(filename)-4:]) == ".csv"
 }
