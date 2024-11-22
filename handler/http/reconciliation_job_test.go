@@ -35,7 +35,7 @@ var (
 				FilePath: "path_to_file_bca",
 			},
 		},
-		Result: entity.ReconciliationResult{
+		Result: &entity.ReconciliationResult{
 			TotalTransactionProcessed: 10,
 			TotalTransactionMatched:   5,
 			TotalTransactionUnmatched: 5,

@@ -36,14 +36,14 @@ type ReconciliationResult struct {
 
 // ReconciliationJob hold reconciliation job data
 type ReconciliationJob struct {
-	ID                       int64
-	Status                   ReconciliationJobStatus
-	SystemTransactionCsvPath string
-	BankTransactionCsvPaths  []BankTransactionCsv
-	DiscrepancyThreshold     float32
-	Result                   ReconciliationResult
-	StartDate                time.Time
-	EndDate                  time.Time
-	CreatedAt                time.Time
-	UpdatedAt                time.Time
+	ID                       int64                   `json:"id"`
+	Status                   ReconciliationJobStatus `json:"status"`
+	SystemTransactionCsvPath string                  `json:"system_transaction_csv_path"`
+	BankTransactionCsvPaths  []BankTransactionCsv    `json:"bank_transaction_csv_paths"`
+	DiscrepancyThreshold     float32                 `json:"discrepancy_threshold"`
+	Result                   *ReconciliationResult   `json:"result"`
+	StartDate                time.Time               `json:"start_date"`
+	EndDate                  time.Time               `json:"end_date"`
+	CreatedAt                time.Time               `json:"created_at"`
+	UpdatedAt                time.Time               `json:"updated_at"`
 }
