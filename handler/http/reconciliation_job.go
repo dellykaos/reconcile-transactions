@@ -150,10 +150,14 @@ func (h *ReconciliationJobHandler) buildFileParams(r *http.Request) (*reconcilia
 		return nil, err
 	}
 
-	h.buildBankTrxFiles(r.MultipartForm)
+	bankFiles, err := h.buildBankTrxFiles(r.MultipartForm)
+	if err != nil {
+		return nil, err
+	}
 
 	params := &reconciliatonjob.CreateParams{
 		SystemTransactionCsv: file,
+		BankTransactionCsvs:  bankFiles,
 	}
 
 	return params, nil
