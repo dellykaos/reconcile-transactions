@@ -1,6 +1,7 @@
 package localfilestorage
 
 import (
+	"bytes"
 	"crypto/rand"
 	"fmt"
 	"os"
@@ -45,6 +46,32 @@ func (lfs *Storage) Store(file *filestorage.File) (string, error) {
 	return uniqueFilePath, nil
 }
 
+// Get is a function to get file from local storage
+func (lfs *Storage) Get(filePath string) (*filestorage.File, error) {
+	file, err := os.Open(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open file: %w", err)
+	}
+	defer file.Close()
+
+	stat, err := file.Stat()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get file stat: %w", err)
+	}
+
+	buf := make([]byte, stat.Size())
+	if _, err := file.Read(buf); err != nil {
+		return nil, fmt.Errorf("failed to read file content: %w", err)
+	}
+
+	return &filestorage.File{
+		Name: stat.Name(),
+		Buf:  bytes.NewBuffer(buf),
+	}, nil
+}
+
+// TODO: Move generation unique path to service layer.
+// Repository should not store any business logic.
 func (lfs *Storage) generateUniqueFileDirectory() string {
 	timestamp := time.Now().UnixNano()
 	randomString := lfs.generateRandomString(8)
