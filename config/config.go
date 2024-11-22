@@ -26,6 +26,10 @@ type ServerConfig struct {
 	Port int `env:"SERVER_PORT,default=8080"`
 }
 
+type LocalStorageConfig struct {
+	Dir string `env:"LOCAL_STORAGE_DIR"`
+}
+
 // NewConfig creates an instance of Config.
 func NewConfig(env string) (*Config, error) {
 	_ = godotenv.Load(env)
