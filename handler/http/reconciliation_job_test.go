@@ -64,15 +64,17 @@ var (
 
 type ReconciliationJobHandlerTestSuite struct {
 	suite.Suite
-	router      *httprouter.Router
-	mockService *mock_reconciliatonjob.MockFinder
-	handler     *handler.ReconciliationJobHandler
+	router             *httprouter.Router
+	mockFinderService  *mock_reconciliatonjob.MockFinder
+	mockCreatorService *mock_reconciliatonjob.MockCreator
+	handler            *handler.ReconciliationJobHandler
 }
 
 func (s *ReconciliationJobHandlerTestSuite) SetupTest() {
 	ctrl := gomock.NewController(s.T())
-	s.mockService = mock_reconciliatonjob.NewMockFinder(ctrl)
-	s.handler = handler.NewReconciliationJobHandler(s.mockService)
+	s.mockFinderService = mock_reconciliatonjob.NewMockFinder(ctrl)
+	s.mockCreatorService = mock_reconciliatonjob.NewMockCreator(ctrl)
+	s.handler = handler.NewReconciliationJobHandler(s.mockFinderService, s.mockCreatorService)
 
 	s.router = httprouter.New()
 	s.handler.Register(s.router)
@@ -87,7 +89,7 @@ func (s *ReconciliationJobHandlerTestSuite) TestGetReconciliationJobByID() {
 
 	req, _ := http.NewRequest(http.MethodGet, "/reconciliations/1", nil)
 	s.Run("success", func() {
-		s.mockService.EXPECT().FindByID(ctx, id).Return(entityReconJob, nil)
+		s.mockFinderService.EXPECT().FindByID(ctx, id).Return(entityReconJob, nil)
 
 		resp := s.executeReq(req)
 
@@ -98,7 +100,7 @@ func (s *ReconciliationJobHandlerTestSuite) TestGetReconciliationJobByID() {
 	})
 
 	s.Run("not found", func() {
-		s.mockService.EXPECT().FindByID(ctx, id).Return(nil, nil)
+		s.mockFinderService.EXPECT().FindByID(ctx, id).Return(nil, nil)
 
 		resp := s.executeReq(req)
 
@@ -108,7 +110,7 @@ func (s *ReconciliationJobHandlerTestSuite) TestGetReconciliationJobByID() {
 	})
 
 	s.Run("internal server error", func() {
-		s.mockService.EXPECT().FindByID(ctx, id).Return(nil, assert.AnError)
+		s.mockFinderService.EXPECT().FindByID(ctx, id).Return(nil, assert.AnError)
 
 		resp := s.executeReq(req)
 
@@ -132,8 +134,8 @@ func (s *ReconciliationJobHandlerTestSuite) TestGetAllReconciliationJob() {
 	req, _ := http.NewRequest(http.MethodGet, "/reconciliations", nil)
 	s.Run("success", func() {
 		total := int64(1)
-		s.mockService.EXPECT().Count(ctx).Return(total, nil)
-		s.mockService.EXPECT().FindAll(ctx, int32(10), int32(0)).Return([]*entity.ReconciliationJob{entityReconJob}, nil)
+		s.mockFinderService.EXPECT().Count(ctx).Return(total, nil)
+		s.mockFinderService.EXPECT().FindAll(ctx, int32(10), int32(0)).Return([]*entity.ReconciliationJob{entityReconJob}, nil)
 
 		resp := s.executeReq(req)
 
@@ -145,7 +147,7 @@ func (s *ReconciliationJobHandlerTestSuite) TestGetAllReconciliationJob() {
 
 	s.Run("no data", func() {
 		total := int64(0)
-		s.mockService.EXPECT().Count(ctx).Return(total, nil)
+		s.mockFinderService.EXPECT().Count(ctx).Return(total, nil)
 
 		resp := s.executeReq(req)
 
@@ -157,8 +159,8 @@ func (s *ReconciliationJobHandlerTestSuite) TestGetAllReconciliationJob() {
 	s.Run("invalid offset and limit", func() {
 		req, _ := http.NewRequest(http.MethodGet, "/reconciliations?offset=-1&limit=1000", nil)
 		total := int64(1)
-		s.mockService.EXPECT().Count(ctx).Return(total, nil)
-		s.mockService.EXPECT().FindAll(ctx, int32(100), int32(0)).Return([]*entity.ReconciliationJob{entityReconJob}, nil)
+		s.mockFinderService.EXPECT().Count(ctx).Return(total, nil)
+		s.mockFinderService.EXPECT().FindAll(ctx, int32(100), int32(0)).Return([]*entity.ReconciliationJob{entityReconJob}, nil)
 
 		resp := s.executeReq(req)
 
@@ -169,7 +171,7 @@ func (s *ReconciliationJobHandlerTestSuite) TestGetAllReconciliationJob() {
 	})
 
 	s.Run("error on count", func() {
-		s.mockService.EXPECT().Count(ctx).Return(int64(0), assert.AnError)
+		s.mockFinderService.EXPECT().Count(ctx).Return(int64(0), assert.AnError)
 
 		resp := s.executeReq(req)
 
@@ -178,8 +180,8 @@ func (s *ReconciliationJobHandlerTestSuite) TestGetAllReconciliationJob() {
 
 	s.Run("error on find all", func() {
 		total := int64(1)
-		s.mockService.EXPECT().Count(ctx).Return(total, nil)
-		s.mockService.EXPECT().FindAll(ctx, int32(10), int32(0)).Return(nil, assert.AnError)
+		s.mockFinderService.EXPECT().Count(ctx).Return(total, nil)
+		s.mockFinderService.EXPECT().FindAll(ctx, int32(10), int32(0)).Return(nil, assert.AnError)
 
 		resp := s.executeReq(req)
 

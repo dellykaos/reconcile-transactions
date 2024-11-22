@@ -15,6 +15,7 @@ import (
 
 	entity "github.com/delly/amartha/entity"
 	dbgen "github.com/delly/amartha/repository/postgresql"
+	reconciliatonjob "github.com/delly/amartha/service/reconciliaton_job"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -42,18 +43,18 @@ func (m *MockCreator) EXPECT() *MockCreatorMockRecorder {
 }
 
 // Create mocks base method.
-func (m *MockCreator) Create(ctx context.Context, job *entity.ReconciliationJob) (*entity.ReconciliationJob, error) {
+func (m *MockCreator) Create(ctx context.Context, params *reconciliatonjob.CreateParams) (*entity.ReconciliationJob, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Create", ctx, job)
+	ret := m.ctrl.Call(m, "Create", ctx, params)
 	ret0, _ := ret[0].(*entity.ReconciliationJob)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Create indicates an expected call of Create.
-func (mr *MockCreatorMockRecorder) Create(ctx, job any) *gomock.Call {
+func (mr *MockCreatorMockRecorder) Create(ctx, params any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockCreator)(nil).Create), ctx, job)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockCreator)(nil).Create), ctx, params)
 }
 
 // MockCreatorRepository is a mock of CreatorRepository interface.
@@ -80,7 +81,7 @@ func (m *MockCreatorRepository) EXPECT() *MockCreatorRepositoryMockRecorder {
 }
 
 // CreateReconciliationJob mocks base method.
-func (m *MockCreatorRepository) CreateReconciliationJob(ctx context.Context, job dbgen.ReconciliationJob) (dbgen.ReconciliationJob, error) {
+func (m *MockCreatorRepository) CreateReconciliationJob(ctx context.Context, job dbgen.CreateReconciliationJobParams) (dbgen.ReconciliationJob, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "CreateReconciliationJob", ctx, job)
 	ret0, _ := ret[0].(dbgen.ReconciliationJob)
