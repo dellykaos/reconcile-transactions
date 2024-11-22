@@ -33,36 +33,42 @@ func TestReconciliationJobCreatorTestSuite(t *testing.T) {
 func (s *ReconciliationJobCreatorTestSuite) TestCreate() {
 	ctx := context.Background()
 
-	job := &entity.ReconciliationJob{
-		SystemTransactionCsvPath: "/path/to/system/transaction.csv",
-		DiscrepancyThreshold:     0.1,
-		StartDate:                time.Now(),
-		EndDate:                  time.Now(),
-		CreatedAt:                time.Now(),
-		UpdatedAt:                time.Now(),
-		BankTransactionCsvPaths: []entity.BankTransactionCsv{
+	params := &reconciliatonjob.CreateParams{
+		SystemTransactionCsv: &reconciliatonjob.File{
+			Path: "/path/to/system/transaction.csv",
+		},
+		DiscrepancyThreshold: 0.1,
+		StartDate:            time.Now(),
+		EndDate:              time.Now(),
+		BankTransactionCsvs: []*reconciliatonjob.BankTransactionFile{
 			{
 				BankName: "BCA",
-				FilePath: "/path/to/bca/transaction.csv",
+				File: &reconciliatonjob.File{
+					Path: "/path/to/bca/transaction.csv",
+				},
 			},
 		},
 	}
-	dbParams := dbgen.ReconciliationJob{
-		SystemTransactionCsvPath: job.SystemTransactionCsvPath,
-		DiscrepancyThreshold:     float64(job.DiscrepancyThreshold),
-		StartDate:                job.StartDate,
-		EndDate:                  job.EndDate,
-		CreatedAt:                job.CreatedAt,
-		UpdatedAt:                job.UpdatedAt,
+	bankTrxCsvPaths := []entity.BankTransactionCsv{
+		{
+			BankName: params.BankTransactionCsvs[0].BankName,
+			FilePath: params.BankTransactionCsvs[0].File.Path,
+		},
 	}
-	dbParams.BankTransactionCsvPaths.Set(job.BankTransactionCsvPaths)
+	dbParams := dbgen.ReconciliationJob{
+		SystemTransactionCsvPath: params.SystemTransactionCsv.Path,
+		DiscrepancyThreshold:     float64(params.DiscrepancyThreshold),
+		StartDate:                params.StartDate,
+		EndDate:                  params.EndDate,
+	}
+	dbParams.BankTransactionCsvPaths.Set(bankTrxCsvPaths)
 	dbResult := dbParams
 	dbResult.Status = "PENDING"
 	jrResult := &entity.ReconciliationJob{
 		ID:                       dbResult.ID,
 		Status:                   entity.ReconciliationJobStatus(dbResult.Status),
 		SystemTransactionCsvPath: dbResult.SystemTransactionCsvPath,
-		BankTransactionCsvPaths:  job.BankTransactionCsvPaths,
+		BankTransactionCsvPaths:  bankTrxCsvPaths,
 		DiscrepancyThreshold:     float32(dbResult.DiscrepancyThreshold),
 		StartDate:                dbResult.StartDate,
 		EndDate:                  dbResult.EndDate,
@@ -73,7 +79,7 @@ func (s *ReconciliationJobCreatorTestSuite) TestCreate() {
 	s.Run("success", func() {
 		s.repo.EXPECT().CreateReconciliationJob(ctx, dbParams).Return(dbResult, nil)
 
-		res, err := s.svc.Create(ctx, job)
+		res, err := s.svc.Create(ctx, params)
 
 		s.Nil(err)
 		s.Equal(jrResult, res)
@@ -82,7 +88,7 @@ func (s *ReconciliationJobCreatorTestSuite) TestCreate() {
 	s.Run("error", func() {
 		s.repo.EXPECT().CreateReconciliationJob(ctx, dbParams).Return(dbgen.ReconciliationJob{}, assert.AnError)
 
-		res, err := s.svc.Create(ctx, job)
+		res, err := s.svc.Create(ctx, params)
 
 		s.Nil(res)
 		s.Equal(assert.AnError, err)

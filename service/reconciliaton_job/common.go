@@ -21,17 +21,3 @@ func convertToEntityReconciliationJob(rj dbgen.ReconciliationJob) *entity.Reconc
 
 	return res
 }
-
-func convertToDBReconciliationJob(job *entity.ReconciliationJob) dbgen.ReconciliationJob {
-	res := dbgen.ReconciliationJob{
-		SystemTransactionCsvPath: job.SystemTransactionCsvPath,
-		DiscrepancyThreshold:     float64(job.DiscrepancyThreshold),
-		StartDate:                job.StartDate,
-		EndDate:                  job.EndDate,
-		CreatedAt:                job.CreatedAt,
-		UpdatedAt:                job.UpdatedAt,
-	}
-	res.BankTransactionCsvPaths.Set(job.BankTransactionCsvPaths)
-
-	return res
-}
