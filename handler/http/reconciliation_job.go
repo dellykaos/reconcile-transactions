@@ -210,7 +210,6 @@ func (h *ReconciliationJobHandler) buildBankTrxFiles(form *multipart.Form) ([]*r
 }
 
 func (h *ReconciliationJobHandler) validateCSVFile(file *multipart.FileHeader) (*bytes.Buffer, error) {
-	// we can improve this by using mime type, but for the sake of simplicity we just check the extension
 	if !isCSVExtension(file.Filename) {
 		return nil, ErrExtensionFileInvalid(file.Filename)
 	}
