@@ -9,6 +9,7 @@ import (
 	dbgen "github.com/delly/amartha/repository/postgresql"
 	reconciliatonjob "github.com/delly/amartha/service/reconciliaton_job"
 	mock_reconciliatonjob "github.com/delly/amartha/test/mock/service/reconciliaton_job"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	"go.uber.org/mock/gomock"
 )
@@ -76,5 +77,14 @@ func (s *ReconciliationJobCreatorTestSuite) TestCreate() {
 
 		s.Nil(err)
 		s.Equal(jrResult, res)
+	})
+
+	s.Run("error", func() {
+		s.repo.EXPECT().CreateReconciliationJob(ctx, dbParams).Return(dbgen.ReconciliationJob{}, assert.AnError)
+
+		res, err := s.svc.Create(ctx, job)
+
+		s.Nil(res)
+		s.Equal(assert.AnError, err)
 	})
 }
