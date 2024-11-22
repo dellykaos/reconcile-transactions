@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/delly/amartha/entity"
+	filestorage "github.com/delly/amartha/repository/file_storage"
 	dbgen "github.com/delly/amartha/repository/postgresql"
 )
 
@@ -21,7 +22,7 @@ type CreatorRepository interface {
 
 // FileRepository is a contract to for file repository
 type FileRepository interface {
-	Store(ctx context.Context, file *File) (string, error)
+	Store(file *filestorage.File) (string, error)
 }
 
 // CreatorService is a service to create reconciliation job
@@ -65,14 +66,20 @@ func NewCreatorService(repo CreatorRepository,
 
 // Create create reconciliation job
 func (s *CreatorService) Create(ctx context.Context, params *CreateParams) (*entity.ReconciliationJob, error) {
-	path, err := s.fileRepo.Store(ctx, params.SystemTransactionCsv)
+	path, err := s.fileRepo.Store(&filestorage.File{
+		Name: params.SystemTransactionCsv.Name,
+		Buf:  params.SystemTransactionCsv.Buf,
+	})
 	if err != nil {
 		return nil, err
 	}
 	params.SystemTransactionCsv.Path = path
 
 	for _, v := range params.BankTransactionCsvs {
-		path, err := s.fileRepo.Store(ctx, v.File)
+		path, err := s.fileRepo.Store(&filestorage.File{
+			Name: v.File.Name,
+			Buf:  v.File.Buf,
+		})
 		if err != nil {
 			return nil, err
 		}

@@ -11,6 +11,7 @@ import (
 
 	"github.com/delly/amartha/config"
 	handler "github.com/delly/amartha/handler/http"
+	localfilestorage "github.com/delly/amartha/repository/file_storage/local_file_storage"
 	dbgen "github.com/delly/amartha/repository/postgresql"
 	reconciliatonjob "github.com/delly/amartha/service/reconciliaton_job"
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -43,8 +44,12 @@ func main() {
 	}()
 
 	querier := dbgen.New(pool)
+	currentDir, err := os.Getwd()
+	checkError(err)
+	fileDir := fmt.Sprintf("%s%s", currentDir, cfg.LocalStorage.Dir)
+	fileStorage := localfilestorage.NewStorage(fileDir)
 	reconFinderSvc := reconciliatonjob.NewFinderService(querier)
-	reconCreatorSvc := reconciliatonjob.NewCreatorService(querier)
+	reconCreatorSvc := reconciliatonjob.NewCreatorService(querier, fileStorage)
 	reconJobHandler := handler.NewReconciliationJobHandler(reconFinderSvc, reconCreatorSvc)
 
 	r := httprouter.New()

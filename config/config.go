@@ -8,8 +8,9 @@ import (
 
 // Config holds the configuration for the application.
 type Config struct {
-	Database DatabaseConfig
-	Server   ServerConfig
+	Database     DatabaseConfig
+	Server       ServerConfig
+	LocalStorage LocalStorageConfig
 }
 
 // DatabaseConfig holds the configuration for the database.
