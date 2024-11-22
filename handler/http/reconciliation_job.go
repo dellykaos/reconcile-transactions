@@ -108,7 +108,7 @@ func (h *ReconciliationJobHandler) CreateReconciliationJob(w http.ResponseWriter
 }
 
 func (h *ReconciliationJobHandler) parseCreateReconciliationJobParams(r *http.Request) (*reconciliatonjob.CreateParams, error) {
-	if err := h.validateBodyRequest(r); err != nil {
+	if err := h.validateFiles(r); err != nil {
 		return nil, err
 	}
 
@@ -130,7 +130,7 @@ func (h *ReconciliationJobHandler) parseCreateReconciliationJobParams(r *http.Re
 	}, nil
 }
 
-func (h *ReconciliationJobHandler) validateBodyRequest(r *http.Request) error {
+func (h *ReconciliationJobHandler) validateFiles(r *http.Request) error {
 	if err := r.ParseMultipartForm(entity.LimitContentSize); err != nil {
 		return err
 	}
@@ -139,33 +139,38 @@ func (h *ReconciliationJobHandler) validateBodyRequest(r *http.Request) error {
 		return errors.New("content size more than 100mb")
 	}
 
-	systemTrxFile := r.MultipartForm.File["system_transaction_file"]
-	if err := h.validateSystemTrxFile(systemTrxFile); err != nil {
+	if err := h.validateSystemTrxFile(r.MultipartForm); err != nil {
 		return err
 	}
 
-	bankNames := r.MultipartForm.Value["bank_names"]
-	bankTrxFiles := r.MultipartForm.File["bank_transaction_files"]
+	return h.validateBankTrxFile(r.MultipartForm)
+}
+
+func (h *ReconciliationJobHandler) validateSystemTrxFile(form *multipart.Form) error {
+	systemTrxFile := form.File["system_transaction_file"]
+	if len(systemTrxFile) == 0 {
+		return errors.New("system transaction file is required")
+	}
+
+	return h.validateCSVFile(systemTrxFile[0])
+}
+
+func (h *ReconciliationJobHandler) validateBankTrxFile(form *multipart.Form) error {
+	bankNames := form.Value["bank_names"]
+	bankTrxFiles := form.File["bank_transaction_files"]
 	if len(bankTrxFiles) == 0 {
 		return errors.New("bank transaction files is required, at least provide one")
 	}
 	if len(bankNames) != len(bankTrxFiles) {
 		return errors.New("bank names and bank transaction files length must be same")
 	}
-
 	for _, file := range bankTrxFiles {
-		h.validateCSVFile(file)
+		if err := h.validateCSVFile(file); err != nil {
+			return err
+		}
 	}
 
 	return nil
-}
-
-func (h *ReconciliationJobHandler) validateSystemTrxFile(mp []*multipart.FileHeader) error {
-	if len(mp) == 0 {
-		return errors.New("system transaction file is required")
-	}
-
-	return h.validateCSVFile(mp[0])
 }
 
 func (h *ReconciliationJobHandler) validateCSVFile(file *multipart.FileHeader) error {
