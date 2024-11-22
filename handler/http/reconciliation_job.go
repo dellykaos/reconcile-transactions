@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/delly/amartha/entity"
 	reconciliatonjob "github.com/delly/amartha/service/reconciliaton_job"
 	"github.com/julienschmidt/httprouter"
 )
@@ -55,8 +56,8 @@ func (h *ReconciliationJobHandler) GetReconciliationJobByID(w http.ResponseWrite
 }
 
 // GetAllReconciliationJob get all reconciliation job
-func (h *ReconciliationJobHandler) GetAllReconciliationJob(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	pagination := getPagination(p)
+func (h *ReconciliationJobHandler) GetAllReconciliationJob(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	pagination := getPagination(r)
 
 	total, err := h.finderService.Count(r.Context())
 	if err != nil {
@@ -64,8 +65,12 @@ func (h *ReconciliationJobHandler) GetAllReconciliationJob(w http.ResponseWriter
 		writeInternalServerError(w)
 		return
 	}
-
 	pagination.Total = int32(total)
+	if total == 0 {
+		writeJSON(w, http.StatusOK, []*entity.ReconciliationJob{}, pagination)
+		return
+	}
+
 	rjs, err := h.finderService.FindAll(r.Context(), pagination.Limit, pagination.Offset)
 	if err != nil {
 		h.logger.Printf("error find all: %v", err)

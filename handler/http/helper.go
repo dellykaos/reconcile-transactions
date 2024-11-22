@@ -5,11 +5,12 @@ import (
 	"log"
 	"net/http"
 	"strconv"
-
-	"github.com/julienschmidt/httprouter"
 )
 
-const minLimit = 10
+const (
+	minLimit = 10
+	maxLimit = 100
+)
 
 type pagination struct {
 	Limit  int32 `json:"limit"`
@@ -53,13 +54,15 @@ func writeNotFound(w http.ResponseWriter, message string) {
 	json.NewEncoder(w).Encode(map[string]string{"message": message})
 }
 
-func getPagination(p httprouter.Params) pagination {
-	limit, _ := strconv.Atoi(p.ByName("limit"))
+func getPagination(r *http.Request) pagination {
+	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
 	if limit <= 0 {
 		limit = minLimit
+	} else if limit > maxLimit {
+		limit = maxLimit
 	}
 
-	offset, _ := strconv.Atoi(p.ByName("offset"))
+	offset, _ := strconv.Atoi(r.URL.Query().Get("offset"))
 	if offset < 0 {
 		offset = 0
 	}
