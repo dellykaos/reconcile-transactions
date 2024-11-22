@@ -44,7 +44,7 @@ func main() {
 
 	querier := dbgen.New(pool)
 	reconFinderSvc := reconciliatonjob.NewFinderService(querier)
-	reconJobHandler := handler.NewReconciliationJobHandler(*reconFinderSvc)
+	reconJobHandler := handler.NewReconciliationJobHandler(reconFinderSvc)
 
 	r := httprouter.New()
 	reconJobHandler.Register(r)

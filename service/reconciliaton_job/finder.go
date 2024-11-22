@@ -28,6 +28,8 @@ type FinderService struct {
 	repo FinderRepository
 }
 
+var _ = Finder(&FinderService{})
+
 // NewFinderService create new finder service
 func NewFinderService(repo FinderRepository) *FinderService {
 	return &FinderService{repo: repo}

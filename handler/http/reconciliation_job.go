@@ -1,7 +1,9 @@
 package http
 
 import (
+	"log"
 	"net/http"
+	"os"
 	"strconv"
 
 	reconciliatonjob "github.com/delly/amartha/service/reconciliaton_job"
@@ -10,12 +12,16 @@ import (
 
 // ReconciliationJobHandler is a handler for reconciliation job
 type ReconciliationJobHandler struct {
-	finderService reconciliatonjob.FinderService
+	finderService reconciliatonjob.Finder
+	logger        *log.Logger
 }
 
 // NewReconciliationJobHandler create new reconciliation job handler, it used to create new reconciliation job, get reconciliation job by id, and get all reconciliation job
-func NewReconciliationJobHandler(finderService reconciliatonjob.FinderService) *ReconciliationJobHandler {
-	return &ReconciliationJobHandler{finderService: finderService}
+func NewReconciliationJobHandler(finderService reconciliatonjob.Finder) *ReconciliationJobHandler {
+	return &ReconciliationJobHandler{
+		finderService: finderService,
+		logger:        log.New(os.Stdout, "[ReconciliationJobHandler] ", log.LstdFlags),
+	}
 }
 
 // Register register reconciliation job handler to router
@@ -28,17 +34,19 @@ func (h *ReconciliationJobHandler) Register(router *httprouter.Router) {
 func (h *ReconciliationJobHandler) GetReconciliationJobByID(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	id, err := strconv.ParseInt(p.ByName("id"), 10, 64)
 	if err != nil {
+		logErrorF(h.logger, "invalid id: %s", p.ByName("id"))
 		writeBadRequest(w, "invalid id")
 		return
 	}
 
 	rj, err := h.finderService.FindByID(r.Context(), id)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		logErrorF(h.logger, "error find by id: %v", err)
+		writeInternalServerError(w)
 		return
 	}
-
 	if rj == nil {
+		logInfoF(h.logger, "reconciliation job %d not found", id)
 		writeNotFound(w, "reconciliation job not found")
 		return
 	}
@@ -52,14 +60,16 @@ func (h *ReconciliationJobHandler) GetAllReconciliationJob(w http.ResponseWriter
 
 	total, err := h.finderService.Count(r.Context())
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		h.logger.Printf("error count: %v", err)
+		writeInternalServerError(w)
 		return
 	}
 
 	pagination.Total = int32(total)
 	rjs, err := h.finderService.FindAll(r.Context(), pagination.Limit, pagination.Offset)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		h.logger.Printf("error find all: %v", err)
+		writeInternalServerError(w)
 		return
 	}
 

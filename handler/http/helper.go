@@ -2,6 +2,7 @@ package http
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"strconv"
 
@@ -28,6 +29,10 @@ func writeJSON(w http.ResponseWriter, statusCode int, data interface{}, meta int
 		Data: data,
 		Meta: meta,
 	})
+}
+
+func writeInternalServerError(w http.ResponseWriter) {
+	writeError(w, http.StatusInternalServerError, "internal server error")
 }
 
 func writeError(w http.ResponseWriter, code int, message string) {
@@ -63,4 +68,12 @@ func getPagination(p httprouter.Params) pagination {
 		Limit:  int32(limit),
 		Offset: int32(offset),
 	}
+}
+
+func logInfoF(logger *log.Logger, format string, v ...interface{}) {
+	logger.Printf("[INFO] "+format, v...)
+}
+
+func logErrorF(logger *log.Logger, format string, v ...interface{}) {
+	logger.Printf("[ERROR] "+format, v...)
 }
