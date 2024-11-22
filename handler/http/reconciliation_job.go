@@ -20,6 +20,7 @@ func NewReconciliationJobHandler(finderService reconciliatonjob.FinderService) *
 
 // Register register reconciliation job handler to router
 func (h *ReconciliationJobHandler) Register(router *httprouter.Router) {
+	router.GET("/reconciliations", h.GetAllReconciliationJob)
 	router.GET("/reconciliations/:id", h.GetReconciliationJobByID)
 }
 
@@ -42,5 +43,25 @@ func (h *ReconciliationJobHandler) GetReconciliationJobByID(w http.ResponseWrite
 		return
 	}
 
-	writeJSON(w, http.StatusOK, rj)
+	writeJSON(w, http.StatusOK, rj, nil)
+}
+
+// GetAllReconciliationJob get all reconciliation job
+func (h *ReconciliationJobHandler) GetAllReconciliationJob(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	pagination := getPagination(p)
+
+	total, err := h.finderService.Count(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	pagination.Total = int32(total)
+	rjs, err := h.finderService.FindAll(r.Context(), pagination.Limit, pagination.Offset)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, rjs, pagination)
 }
