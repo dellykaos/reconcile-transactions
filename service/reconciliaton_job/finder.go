@@ -45,7 +45,7 @@ func (s *FinderService) FindByID(ctx context.Context, id int64) (*entity.Reconci
 		return nil, err
 	}
 
-	return s.convertToEntityReconciliationJob(rj), nil
+	return convertToEntityReconciliationJob(rj), nil
 }
 
 // FindAll find all reconciliation job
@@ -61,7 +61,7 @@ func (s *FinderService) FindAll(ctx context.Context, limit, offset int32) ([]*en
 
 	res := []*entity.ReconciliationJob{}
 	for _, rj := range rjs {
-		res = append(res, s.convertToEntityReconciliationJob(rj))
+		res = append(res, convertToEntityReconciliationJob(rj))
 	}
 
 	return res, nil
@@ -70,21 +70,4 @@ func (s *FinderService) FindAll(ctx context.Context, limit, offset int32) ([]*en
 // Count count all reconciliation job
 func (s *FinderService) Count(ctx context.Context) (int64, error) {
 	return s.repo.CountReconciliationJobs(ctx)
-}
-
-func (s *FinderService) convertToEntityReconciliationJob(rj dbgen.ReconciliationJob) *entity.ReconciliationJob {
-	res := &entity.ReconciliationJob{
-		ID:                       rj.ID,
-		Status:                   entity.ReconciliationJobStatus(rj.Status),
-		SystemTransactionCsvPath: rj.SystemTransactionCsvPath,
-		DiscrepancyThreshold:     float32(rj.DiscrepancyThreshold),
-		StartDate:                rj.StartDate,
-		EndDate:                  rj.EndDate,
-		CreatedAt:                rj.CreatedAt,
-		UpdatedAt:                rj.UpdatedAt,
-	}
-	rj.BankTransactionCsvPaths.AssignTo(&res.BankTransactionCsvPaths)
-	rj.Result.AssignTo(&res.Result)
-
-	return res
 }

@@ -24,7 +24,8 @@ func (q *Queries) CountReconciliationJobs(ctx context.Context) (int64, error) {
 }
 
 const createReconciliationJob = `-- name: CreateReconciliationJob :one
-INSERT INTO reconciliation_jobs (status, system_transaction_csv_path, bank_transaction_csv_paths, discrepancy_threshold, start_date, end_date) VALUES ('PENDING', $1, $2, $3, $4, $5) RETURNING id, status, system_transaction_csv_path, bank_transaction_csv_paths, discrepancy_threshold, start_date, end_date, result, created_at, updated_at
+INSERT INTO reconciliation_jobs (status, system_transaction_csv_path, bank_transaction_csv_paths, discrepancy_threshold, start_date, end_date) VALUES ('PENDING', $1, $2, $3, $4, $5)
+RETURNING id, status, system_transaction_csv_path, bank_transaction_csv_paths, discrepancy_threshold, start_date, end_date, result, created_at, updated_at
 `
 
 type CreateReconciliationJobParams struct {
