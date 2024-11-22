@@ -1,6 +1,6 @@
 package entity
 
 const (
-	LimitUploadSize  = 100 << 20 // 100 MB
-	LimitContentSize = 105 << 20 // 105 MB
+	LimitCSVSize     = int64(10 << 20)  // 10 MB
+	LimitContentSize = int64(100 << 20) // 100 MB
 )

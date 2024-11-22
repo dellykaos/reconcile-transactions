@@ -96,3 +96,7 @@ func parseFloat32(str string) float32 {
 	f, _ := strconv.ParseFloat(str, 32)
 	return float32(f)
 }
+
+func isCSVExtension(filename string) bool {
+	return filename[len(filename)-4:] == ".csv"
+}

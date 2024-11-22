@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"mime/multipart"
 	"net/http"
 	"os"
 	"strconv"
@@ -92,11 +93,10 @@ func (h *ReconciliationJobHandler) CreateReconciliationJob(w http.ResponseWriter
 	params, err := h.parseCreateReconciliationJobParams(r)
 	if err != nil {
 		logErrorF(h.logger, "error parse create reconciliation job params: %v", err)
-		writeBadRequest(w, "invalid request")
+		writeBadRequest(w, err.Error())
 		return
 	}
 
-	fmt.Println(params)
 	rj, err := h.creatorService.Create(r.Context(), params)
 	if err != nil {
 		logErrorF(h.logger, "error create reconciliation job: %v", err)
@@ -112,35 +112,69 @@ func (h *ReconciliationJobHandler) parseCreateReconciliationJobParams(r *http.Re
 		return nil, err
 	}
 
+	startDate := parseDate(r.FormValue("start_date"))
+	endDate := parseDate(r.FormValue("end_date"))
+	if startDate.After(endDate) {
+		return nil, errors.New("start date must be before end date")
+	}
+
+	discrepancyThreshold := parseFloat32(r.FormValue("discrepancy_threshold"))
+	if discrepancyThreshold < 0 {
+		discrepancyThreshold = 0
+	}
+
 	return &reconciliatonjob.CreateParams{
-		StartDate:            parseDate(r.FormValue("start_date")),
-		EndDate:              parseDate(r.FormValue("end_date")),
-		DiscrepancyThreshold: parseFloat32(r.FormValue("discrepancy_threshold")),
+		StartDate:            startDate,
+		EndDate:              endDate,
+		DiscrepancyThreshold: discrepancyThreshold,
 	}, nil
 }
 
 func (h *ReconciliationJobHandler) validateBodyRequest(r *http.Request) error {
-	if err := r.ParseMultipartForm(int64(entity.LimitUploadSize)); err != nil {
-		return errors.New("file size more than 100mb")
+	if err := r.ParseMultipartForm(entity.LimitContentSize); err != nil {
+		return err
 	}
 
-	if r.ContentLength > int64(entity.LimitContentSize) {
-		return errors.New("content size more than 105mb")
+	if r.ContentLength > entity.LimitContentSize {
+		return errors.New("content size more than 100mb")
 	}
 
 	systemTrxFile := r.MultipartForm.File["system_transaction_file"]
-	if len(systemTrxFile) == 0 {
-		return errors.New("system transaction file is required")
+	if err := h.validateSystemTrxFile(systemTrxFile); err != nil {
+		return err
 	}
 
+	bankNames := r.MultipartForm.Value["bank_names"]
 	bankTrxFiles := r.MultipartForm.File["bank_transaction_files"]
 	if len(bankTrxFiles) == 0 {
 		return errors.New("bank transaction files is required, at least provide one")
 	}
-
-	bankNames := r.MultipartForm.Value["bank_names"]
 	if len(bankNames) != len(bankTrxFiles) {
 		return errors.New("bank names and bank transaction files length must be same")
+	}
+
+	for _, file := range bankTrxFiles {
+		h.validateCSVFile(file)
+	}
+
+	return nil
+}
+
+func (h *ReconciliationJobHandler) validateSystemTrxFile(mp []*multipart.FileHeader) error {
+	if len(mp) == 0 {
+		return errors.New("system transaction file is required")
+	}
+
+	return h.validateCSVFile(mp[0])
+}
+
+func (h *ReconciliationJobHandler) validateCSVFile(file *multipart.FileHeader) error {
+	// we can improve this by using mime type, but for the sake of simplicity we just check the extension
+	if !isCSVExtension(file.Filename) {
+		return fmt.Errorf("file %s must have a .csv extension", file.Filename)
+	}
+	if file.Size > entity.LimitCSVSize {
+		return fmt.Errorf("file size %s more than 10mb", file.Filename)
 	}
 
 	return nil
