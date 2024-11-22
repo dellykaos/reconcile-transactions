@@ -19,9 +19,15 @@ type CreatorRepository interface {
 	CreateReconciliationJob(ctx context.Context, job dbgen.CreateReconciliationJobParams) (dbgen.ReconciliationJob, error)
 }
 
+// FileRepository is a contract to for file repository
+type FileRepository interface {
+	Store(ctx context.Context, file *File) (string, error)
+}
+
 // CreatorService is a service to create reconciliation job
 type CreatorService struct {
-	repo CreatorRepository
+	repo     CreatorRepository
+	fileRepo FileRepository
 }
 
 // File is a struct to hold metadata of csv file
@@ -49,13 +55,29 @@ type CreateParams struct {
 var _ = Creator(&CreatorService{})
 
 // NewCreatorService create new creator service
-func NewCreatorService(repo CreatorRepository) *CreatorService {
-	return &CreatorService{repo: repo}
+func NewCreatorService(repo CreatorRepository,
+	fileRepo FileRepository) *CreatorService {
+	return &CreatorService{
+		repo:     repo,
+		fileRepo: fileRepo,
+	}
 }
 
 // Create create reconciliation job
 func (s *CreatorService) Create(ctx context.Context, params *CreateParams) (*entity.ReconciliationJob, error) {
-	// TODO: store csv files to storage
+	path, err := s.fileRepo.Store(ctx, params.SystemTransactionCsv)
+	if err != nil {
+		return nil, err
+	}
+	params.SystemTransactionCsv.Path = path
+
+	for _, v := range params.BankTransactionCsvs {
+		path, err := s.fileRepo.Store(ctx, v.File)
+		if err != nil {
+			return nil, err
+		}
+		v.File.Path = path
+	}
 
 	rj, err := s.repo.CreateReconciliationJob(ctx, params.convertParamsToDB())
 	if err != nil {

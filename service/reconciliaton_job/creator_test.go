@@ -16,14 +16,16 @@ import (
 
 type ReconciliationJobCreatorTestSuite struct {
 	suite.Suite
-	repo *mock_reconciliatonjob.MockCreatorRepository
-	svc  reconciliatonjob.Creator
+	mockRepo     *mock_reconciliatonjob.MockCreatorRepository
+	mockFileRepo *mock_reconciliatonjob.MockFileRepository
+	svc          reconciliatonjob.Creator
 }
 
 func (s *ReconciliationJobCreatorTestSuite) SetupTest() {
 	ctrl := gomock.NewController(s.T())
-	s.repo = mock_reconciliatonjob.NewMockCreatorRepository(ctrl)
-	s.svc = reconciliatonjob.NewCreatorService(s.repo)
+	s.mockRepo = mock_reconciliatonjob.NewMockCreatorRepository(ctrl)
+	s.mockFileRepo = mock_reconciliatonjob.NewMockFileRepository(ctrl)
+	s.svc = reconciliatonjob.NewCreatorService(s.mockRepo, s.mockFileRepo)
 }
 
 func TestReconciliationJobCreatorTestSuite(t *testing.T) {
@@ -33,9 +35,11 @@ func TestReconciliationJobCreatorTestSuite(t *testing.T) {
 func (s *ReconciliationJobCreatorTestSuite) TestCreate() {
 	ctx := context.Background()
 
+	systemTrxPath := "/path/to/system/transaction.csv"
+	bcaTrxPath := "/path/to/bca/transaction.csv"
 	params := &reconciliatonjob.CreateParams{
 		SystemTransactionCsv: &reconciliatonjob.File{
-			Path: "/path/to/system/transaction.csv",
+			Name: "system_transaction.csv",
 		},
 		DiscrepancyThreshold: 0.1,
 		StartDate:            time.Now(),
@@ -44,7 +48,7 @@ func (s *ReconciliationJobCreatorTestSuite) TestCreate() {
 			{
 				BankName: "BCA",
 				File: &reconciliatonjob.File{
-					Path: "/path/to/bca/transaction.csv",
+					Name: "bca_transaction.csv",
 				},
 			},
 		},
@@ -52,11 +56,11 @@ func (s *ReconciliationJobCreatorTestSuite) TestCreate() {
 	bankTrxCsvPaths := []entity.BankTransactionCsv{
 		{
 			BankName: params.BankTransactionCsvs[0].BankName,
-			FilePath: params.BankTransactionCsvs[0].File.Path,
+			FilePath: bcaTrxPath,
 		},
 	}
 	dbParams := dbgen.CreateReconciliationJobParams{
-		SystemTransactionCsvPath: params.SystemTransactionCsv.Path,
+		SystemTransactionCsvPath: systemTrxPath,
 		DiscrepancyThreshold:     float64(params.DiscrepancyThreshold),
 		StartDate:                params.StartDate,
 		EndDate:                  params.EndDate,
@@ -76,7 +80,7 @@ func (s *ReconciliationJobCreatorTestSuite) TestCreate() {
 	jrResult := &entity.ReconciliationJob{
 		ID:                       dbResult.ID,
 		Status:                   entity.ReconciliationJobStatus(dbResult.Status),
-		SystemTransactionCsvPath: dbResult.SystemTransactionCsvPath,
+		SystemTransactionCsvPath: systemTrxPath,
 		BankTransactionCsvPaths:  bankTrxCsvPaths,
 		DiscrepancyThreshold:     float32(dbResult.DiscrepancyThreshold),
 		StartDate:                dbResult.StartDate,
@@ -86,7 +90,9 @@ func (s *ReconciliationJobCreatorTestSuite) TestCreate() {
 	}
 
 	s.Run("success", func() {
-		s.repo.EXPECT().CreateReconciliationJob(ctx, dbParams).Return(dbResult, nil)
+		s.mockFileRepo.EXPECT().Store(ctx, params.SystemTransactionCsv).Return(systemTrxPath, nil)
+		s.mockFileRepo.EXPECT().Store(ctx, params.BankTransactionCsvs[0].File).Return(bcaTrxPath, nil)
+		s.mockRepo.EXPECT().CreateReconciliationJob(ctx, dbParams).Return(dbResult, nil)
 
 		res, err := s.svc.Create(ctx, params)
 
@@ -94,8 +100,29 @@ func (s *ReconciliationJobCreatorTestSuite) TestCreate() {
 		s.Equal(jrResult, res)
 	})
 
-	s.Run("error", func() {
-		s.repo.EXPECT().CreateReconciliationJob(ctx, dbParams).Return(dbgen.ReconciliationJob{}, assert.AnError)
+	s.Run("error store system transaction csv", func() {
+		s.mockFileRepo.EXPECT().Store(ctx, params.SystemTransactionCsv).Return("", assert.AnError)
+
+		res, err := s.svc.Create(ctx, params)
+
+		s.Nil(res)
+		s.Equal(assert.AnError, err)
+	})
+
+	s.Run("error store bank transaction csv", func() {
+		s.mockFileRepo.EXPECT().Store(ctx, params.SystemTransactionCsv).Return(systemTrxPath, nil)
+		s.mockFileRepo.EXPECT().Store(ctx, params.BankTransactionCsvs[0].File).Return("", assert.AnError)
+
+		res, err := s.svc.Create(ctx, params)
+
+		s.Nil(res)
+		s.Equal(assert.AnError, err)
+	})
+
+	s.Run("error create recon", func() {
+		s.mockFileRepo.EXPECT().Store(ctx, params.SystemTransactionCsv).Return(systemTrxPath, nil)
+		s.mockFileRepo.EXPECT().Store(ctx, params.BankTransactionCsvs[0].File).Return(bcaTrxPath, nil)
+		s.mockRepo.EXPECT().CreateReconciliationJob(ctx, dbParams).Return(dbgen.ReconciliationJob{}, assert.AnError)
 
 		res, err := s.svc.Create(ctx, params)
 
