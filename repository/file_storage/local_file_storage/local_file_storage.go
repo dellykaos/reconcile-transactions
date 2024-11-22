@@ -26,12 +26,12 @@ func NewStorage(storagePath string) *Storage {
 
 // Store is a function to store file to local storage
 func (lfs *Storage) Store(file *filestorage.File) (string, error) {
-	if err := os.MkdirAll(lfs.storagePath, os.ModePerm); err != nil {
+	uniqueFileDirectory := lfs.generateUniqueFileDirectory()
+	if err := os.MkdirAll(uniqueFileDirectory, os.ModePerm); err != nil {
 		return "", fmt.Errorf("failed to create storage directory: %w", err)
 	}
 
-	uniqueFilePath := lfs.generateUniqueFilePath(file.Name)
-
+	uniqueFilePath := filepath.Join(uniqueFileDirectory, file.Name)
 	outFile, err := os.Create(uniqueFilePath)
 	if err != nil {
 		return "", fmt.Errorf("failed to create file: %w", err)
@@ -45,11 +45,11 @@ func (lfs *Storage) Store(file *filestorage.File) (string, error) {
 	return uniqueFilePath, nil
 }
 
-func (lfs *Storage) generateUniqueFilePath(fileName string) string {
+func (lfs *Storage) generateUniqueFileDirectory() string {
 	timestamp := time.Now().UnixNano()
 	randomString := lfs.generateRandomString(8)
-	uniqueFileName := fmt.Sprintf("%d_%s_%s", timestamp, randomString, fileName)
-	return filepath.Join(lfs.storagePath, uniqueFileName)
+	uniqueFileDirectory := fmt.Sprintf("%d_%s", timestamp, randomString)
+	return filepath.Join(lfs.storagePath, uniqueFileDirectory)
 }
 
 func (lfs *Storage) generateRandomString(n int) string {
