@@ -16,7 +16,7 @@ type Creator interface {
 
 // CreatorRepository is a contract to create reconciliation job
 type CreatorRepository interface {
-	CreateReconciliationJob(ctx context.Context, job dbgen.ReconciliationJob) (dbgen.ReconciliationJob, error)
+	CreateReconciliationJob(ctx context.Context, job dbgen.CreateReconciliationJobParams) (dbgen.ReconciliationJob, error)
 }
 
 // CreatorService is a service to create reconciliation job
@@ -57,7 +57,7 @@ func NewCreatorService(repo CreatorRepository) *CreatorService {
 func (s *CreatorService) Create(ctx context.Context, params *CreateParams) (*entity.ReconciliationJob, error) {
 	// TODO: store csv files to storage
 
-	rj, err := s.repo.CreateReconciliationJob(ctx, params.convertParamsToDBReconciliationJob())
+	rj, err := s.repo.CreateReconciliationJob(ctx, params.convertParamsToDB())
 	if err != nil {
 		return nil, err
 	}
@@ -65,8 +65,8 @@ func (s *CreatorService) Create(ctx context.Context, params *CreateParams) (*ent
 	return convertToEntityReconciliationJob(rj), nil
 }
 
-func (p *CreateParams) convertParamsToDBReconciliationJob() dbgen.ReconciliationJob {
-	res := dbgen.ReconciliationJob{
+func (p *CreateParams) convertParamsToDB() dbgen.CreateReconciliationJobParams {
+	res := dbgen.CreateReconciliationJobParams{
 		SystemTransactionCsvPath: p.SystemTransactionCsv.Path,
 		DiscrepancyThreshold:     float64(p.DiscrepancyThreshold),
 		StartDate:                p.StartDate,

@@ -5,11 +5,13 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 const (
-	minLimit = 10
-	maxLimit = 100
+	minLimit   = 10
+	maxLimit   = 100
+	dateFormat = "2006-01-02"
 )
 
 type pagination struct {
@@ -79,4 +81,18 @@ func logInfoF(logger *log.Logger, format string, v ...interface{}) {
 
 func logErrorF(logger *log.Logger, format string, v ...interface{}) {
 	logger.Printf("[ERROR] "+format, v...)
+}
+
+func parseDate(dateStr string) time.Time {
+	date, err := time.Parse(dateFormat, dateStr)
+	if err != nil {
+		return time.Now()
+	}
+
+	return date
+}
+
+func parseFloat32(str string) float32 {
+	f, _ := strconv.ParseFloat(str, 32)
+	return float32(f)
 }
