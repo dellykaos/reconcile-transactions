@@ -8,10 +8,10 @@ DB --> ReconApi: return recon job result
 alt recon job not found
   ReconApi --> User: return 404
 else recon job found
-  alt job status is processing
-    ReconApi --> User: return 200 with status processing
+  alt job status is pending
+    ReconApi --> User: return 200 with status pending
   else job status is done
-    ReconApi --> User: return 200 with recon result
+    ReconApi --> User: return 200 with recon result or error information
   end
 end
 

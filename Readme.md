@@ -121,6 +121,8 @@ Query Params:
 
 Response:
 
+Success: Status Code 200 (OK)
+
 ```json
 {
     "data": [
@@ -153,7 +155,7 @@ Response:
 
 ### Get Reconciliation Job Request by ID
 
-![get reconciliation job request by id](https://www.planttext.com/api/plantuml/png/ZP7F3W4n48VlVOfv0R4H9mT1_BaBPrcxWv5gfJEDWtXtqrsBZGI7Dctw-xwPjYEMF4WyMLYWm18Bxmgob0jvfrkELc1k_SKO8R7uCxLc3D0PrfdncGQmcAsW6re8Twz7lzrGUJDDBZ7JoG3swg_2e0bT9RMPJg3JSWQK6DndCBVljFC2EnzTQG1UTLIKcdnA-bdVe6Ly0niewT9UtqWY0p6SWo-GcTnUZxzPUra65v93mxR0gbnRN7g7_ohhHXzNLflsceOPwQm_QUu0)
+![get reconciliation job request by id](https://www.planttext.com/api/plantuml/png/ZP7BRW8n34Nt-Gh_069KiM9HKSHZZ-YwcZ86Z8AD74SiAluTPqPJ65LgkuWLA_SUFp9BLglbSuGr6cnm9xoZIBMHiASfHuDLb6i8HXRnJzLxGeNHQwTvkz0KriijZ7LWIUElatn-K7CBlQvu5lCf79pVYi4LVYlei9Z3QC1KjApyKrZ7PpUBmLuoDm7WKST1fSbloAIQ18m9duozgU1AxZkod80IN90RueE__OPygIguaXrxuyFL5XeY6s7yBwzhiHiMH05LFHBlHS_jPai9RxsSCFFe7nlk)
 
 Path: `/reconciliations/:id`<br/>
 Method: `GET`<br/>
@@ -164,7 +166,7 @@ Params:
 Response:
 
 Success:
-Status code 200
+Status code 200 (OK)
 
 ```json
 {
@@ -243,7 +245,7 @@ Status code 200
 ```
 
 Not Found:
-Status Code 404
+Status Code 404 (Not Found)
 
 ```json
 {
@@ -283,6 +285,9 @@ curl --location 'localhost:8080/reconciliations' \
 
 Response:
 
+Success:
+Status Code 201 (Created)
+
 ```json
 {
     "data": {
@@ -307,6 +312,14 @@ Response:
         "created_at": "2024-11-23T20:58:27.119625+07:00",
         "updated_at": "2024-11-23T20:58:27.119625+07:00"
     }
+}
+```
+
+Invalid Params: Status Code 400 (Bad Request)
+
+```json
+{
+    "message": "bank names and bank transaction files length must be same"
 }
 ```
 
