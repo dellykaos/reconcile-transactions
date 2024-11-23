@@ -144,7 +144,7 @@ func (q *Queries) GetReconciliationJobById(ctx context.Context, id int64) (Recon
 const listPendingReconciliationJobs = `-- name: ListPendingReconciliationJobs :many
 SELECT id, status, system_transaction_csv_path, bank_transaction_csv_paths, discrepancy_threshold, start_date, end_date, result, created_at, updated_at, error_information FROM reconciliation_jobs
 WHERE status = 'PENDING'
-ORDER BY created_at DESC
+ORDER BY created_at ASC
 `
 
 func (q *Queries) ListPendingReconciliationJobs(ctx context.Context) ([]ReconciliationJob, error) {

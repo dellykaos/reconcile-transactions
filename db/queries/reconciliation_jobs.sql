@@ -9,7 +9,7 @@ SELECT COUNT(1) FROM reconciliation_jobs;
 -- name: ListPendingReconciliationJobs :many
 SELECT * FROM reconciliation_jobs
 WHERE status = 'PENDING'
-ORDER BY created_at DESC;
+ORDER BY created_at ASC;
 
 -- name: GetReconciliationJobById :one
 SELECT * FROM reconciliation_jobs WHERE id = $1;
