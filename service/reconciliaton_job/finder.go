@@ -12,7 +12,7 @@ import (
 // Finder is a contract to find reconciliation job
 type Finder interface {
 	Count(ctx context.Context) (int64, error)
-	FindAll(ctx context.Context, limit, offset int32) ([]*entity.ReconciliationJob, error)
+	FindAll(ctx context.Context, limit, offset int32) ([]*entity.SimpleReconciliationJob, error)
 	FindByID(ctx context.Context, id int64) (*entity.ReconciliationJob, error)
 }
 
@@ -20,7 +20,7 @@ type Finder interface {
 type FinderRepository interface {
 	CountReconciliationJobs(ctx context.Context) (int64, error)
 	GetReconciliationJobById(ctx context.Context, id int64) (dbgen.ReconciliationJob, error)
-	ListReconciliationJobs(ctx context.Context, arg dbgen.ListReconciliationJobsParams) ([]dbgen.ReconciliationJob, error)
+	ListReconciliationJobs(ctx context.Context, arg dbgen.ListReconciliationJobsParams) ([]dbgen.ListReconciliationJobsRow, error)
 }
 
 // FinderService is a service to find reconciliation job
@@ -49,7 +49,7 @@ func (s *FinderService) FindByID(ctx context.Context, id int64) (*entity.Reconci
 }
 
 // FindAll find all reconciliation job
-func (s *FinderService) FindAll(ctx context.Context, limit, offset int32) ([]*entity.ReconciliationJob, error) {
+func (s *FinderService) FindAll(ctx context.Context, limit, offset int32) ([]*entity.SimpleReconciliationJob, error) {
 	params := dbgen.ListReconciliationJobsParams{
 		Limit:  limit,
 		Offset: offset,
@@ -59,9 +59,9 @@ func (s *FinderService) FindAll(ctx context.Context, limit, offset int32) ([]*en
 		return nil, err
 	}
 
-	res := []*entity.ReconciliationJob{}
+	res := []*entity.SimpleReconciliationJob{}
 	for _, rj := range rjs {
-		res = append(res, convertToEntityReconciliationJob(rj))
+		res = append(res, convertRowListDbToEntitySimpleReconciliationJob(rj))
 	}
 
 	return res, nil

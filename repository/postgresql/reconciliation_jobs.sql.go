@@ -124,7 +124,8 @@ func (q *Queries) ListPendingReconciliationJobs(ctx context.Context) ([]Reconcil
 }
 
 const listReconciliationJobs = `-- name: ListReconciliationJobs :many
-SELECT id, status, system_transaction_csv_path, bank_transaction_csv_paths, discrepancy_threshold, start_date, end_date, result, created_at, updated_at, error_information FROM reconciliation_jobs
+SELECT id, status, start_date, end_date, discrepancy_threshold,
+system_transaction_csv_path, bank_transaction_csv_paths FROM reconciliation_jobs
 ORDER BY id DESC
 LIMIT $1 OFFSET $2
 `
@@ -134,27 +135,33 @@ type ListReconciliationJobsParams struct {
 	Offset int32 `db:"offset"`
 }
 
-func (q *Queries) ListReconciliationJobs(ctx context.Context, arg ListReconciliationJobsParams) ([]ReconciliationJob, error) {
+type ListReconciliationJobsRow struct {
+	ID                       int64        `db:"id"`
+	Status                   string       `db:"status"`
+	StartDate                time.Time    `db:"start_date"`
+	EndDate                  time.Time    `db:"end_date"`
+	DiscrepancyThreshold     float64      `db:"discrepancy_threshold"`
+	SystemTransactionCsvPath string       `db:"system_transaction_csv_path"`
+	BankTransactionCsvPaths  pgtype.JSONB `db:"bank_transaction_csv_paths"`
+}
+
+func (q *Queries) ListReconciliationJobs(ctx context.Context, arg ListReconciliationJobsParams) ([]ListReconciliationJobsRow, error) {
 	rows, err := q.db.Query(ctx, listReconciliationJobs, arg.Limit, arg.Offset)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []ReconciliationJob
+	var items []ListReconciliationJobsRow
 	for rows.Next() {
-		var i ReconciliationJob
+		var i ListReconciliationJobsRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.Status,
-			&i.SystemTransactionCsvPath,
-			&i.BankTransactionCsvPaths,
-			&i.DiscrepancyThreshold,
 			&i.StartDate,
 			&i.EndDate,
-			&i.Result,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-			&i.ErrorInformation,
+			&i.DiscrepancyThreshold,
+			&i.SystemTransactionCsvPath,
+			&i.BankTransactionCsvPaths,
 		); err != nil {
 			return nil, err
 		}

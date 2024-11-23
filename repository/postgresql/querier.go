@@ -13,7 +13,7 @@ type Querier interface {
 	CreateReconciliationJob(ctx context.Context, arg CreateReconciliationJobParams) (ReconciliationJob, error)
 	GetReconciliationJobById(ctx context.Context, id int64) (ReconciliationJob, error)
 	ListPendingReconciliationJobs(ctx context.Context) ([]ReconciliationJob, error)
-	ListReconciliationJobs(ctx context.Context, arg ListReconciliationJobsParams) ([]ReconciliationJob, error)
+	ListReconciliationJobs(ctx context.Context, arg ListReconciliationJobsParams) ([]ListReconciliationJobsRow, error)
 	SaveFailedReconciliationJob(ctx context.Context, arg SaveFailedReconciliationJobParams) (ReconciliationJob, error)
 	SaveSuccessReconciliationJob(ctx context.Context, arg SaveSuccessReconciliationJobParams) (ReconciliationJob, error)
 }

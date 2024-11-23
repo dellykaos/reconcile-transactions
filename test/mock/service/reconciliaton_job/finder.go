@@ -57,10 +57,10 @@ func (mr *MockFinderMockRecorder) Count(ctx any) *gomock.Call {
 }
 
 // FindAll mocks base method.
-func (m *MockFinder) FindAll(ctx context.Context, limit, offset int32) ([]*entity.ReconciliationJob, error) {
+func (m *MockFinder) FindAll(ctx context.Context, limit, offset int32) ([]*entity.SimpleReconciliationJob, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "FindAll", ctx, limit, offset)
-	ret0, _ := ret[0].([]*entity.ReconciliationJob)
+	ret0, _ := ret[0].([]*entity.SimpleReconciliationJob)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -140,10 +140,10 @@ func (mr *MockFinderRepositoryMockRecorder) GetReconciliationJobById(ctx, id any
 }
 
 // ListReconciliationJobs mocks base method.
-func (m *MockFinderRepository) ListReconciliationJobs(ctx context.Context, arg dbgen.ListReconciliationJobsParams) ([]dbgen.ReconciliationJob, error) {
+func (m *MockFinderRepository) ListReconciliationJobs(ctx context.Context, arg dbgen.ListReconciliationJobsParams) ([]dbgen.ListReconciliationJobsRow, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListReconciliationJobs", ctx, arg)
-	ret0, _ := ret[0].([]dbgen.ReconciliationJob)
+	ret0, _ := ret[0].([]dbgen.ListReconciliationJobsRow)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

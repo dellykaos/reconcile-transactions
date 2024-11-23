@@ -1,5 +1,6 @@
 -- name: ListReconciliationJobs :many
-SELECT * FROM reconciliation_jobs
+SELECT id, status, start_date, end_date, discrepancy_threshold,
+system_transaction_csv_path, bank_transaction_csv_paths FROM reconciliation_jobs
 ORDER BY id DESC
 LIMIT $1 OFFSET $2;
 

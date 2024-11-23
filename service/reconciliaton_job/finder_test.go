@@ -109,6 +109,32 @@ var (
 			},
 		},
 	}
+	dbSimpleReconJob = dbgen.ListReconciliationJobsRow{
+		ID:                       id,
+		Status:                   "SUCCESS",
+		DiscrepancyThreshold:     0.1,
+		SystemTransactionCsvPath: "path_to_file",
+		BankTransactionCsvPaths: pgtype.JSONB{
+			Status: pgtype.Present,
+			Bytes:  []byte(`[{"bank_name": "BCA", "file_path": "path_to_file_bca"}]`),
+		},
+		StartDate: lastMonth,
+		EndDate:   yesterday,
+	}
+	entitySimpleReconJob = &entity.SimpleReconciliationJob{
+		ID:                       id,
+		Status:                   entity.ReconciliationJobStatus("SUCCESS"),
+		DiscrepancyThreshold:     0.1,
+		SystemTransactionCsvPath: "path_to_file",
+		BankTransactionCsvPaths: []entity.BankTransactionCsv{
+			{
+				BankName: "BCA",
+				FilePath: "path_to_file_bca",
+			},
+		},
+		StartDate: lastMonth,
+		EndDate:   yesterday,
+	}
 )
 
 type FinderTestSuite struct {
@@ -165,8 +191,8 @@ func (s *FinderTestSuite) TestFindAll() {
 	offset := int32(0)
 
 	s.Run("success", func() {
-		rjs := []dbgen.ReconciliationJob{dbReconJob}
-		expectedRJs := []*entity.ReconciliationJob{entityReconJob}
+		rjs := []dbgen.ListReconciliationJobsRow{dbSimpleReconJob}
+		expectedRJs := []*entity.SimpleReconciliationJob{entitySimpleReconJob}
 
 		params := dbgen.ListReconciliationJobsParams{
 			Limit:  limit,
@@ -184,7 +210,7 @@ func (s *FinderTestSuite) TestFindAll() {
 			Limit:  limit,
 			Offset: offset,
 		}
-		s.repo.EXPECT().ListReconciliationJobs(ctx, params).Return([]dbgen.ReconciliationJob{}, assert.AnError)
+		s.repo.EXPECT().ListReconciliationJobs(ctx, params).Return([]dbgen.ListReconciliationJobsRow{}, assert.AnError)
 
 		res, err := s.svc.FindAll(ctx, limit, offset)
 		s.Error(err)

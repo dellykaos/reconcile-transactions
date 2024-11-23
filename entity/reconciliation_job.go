@@ -48,3 +48,14 @@ type ReconciliationJob struct {
 	CreatedAt                time.Time               `json:"created_at"`
 	UpdatedAt                time.Time               `json:"updated_at"`
 }
+
+// SimpleReconciliationJob hold simple reconciliation job data
+type SimpleReconciliationJob struct {
+	ID                       int64                   `json:"id"`
+	Status                   ReconciliationJobStatus `json:"status"`
+	DiscrepancyThreshold     float32                 `json:"discrepancy_threshold"`
+	SystemTransactionCsvPath string                  `json:"system_transaction_csv_path"`
+	BankTransactionCsvPaths  []BankTransactionCsv    `json:"bank_transaction_csv_paths"`
+	StartDate                time.Time               `json:"start_date"`
+	EndDate                  time.Time               `json:"end_date"`
+}

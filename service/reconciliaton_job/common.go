@@ -22,3 +22,17 @@ func convertToEntityReconciliationJob(rj dbgen.ReconciliationJob) *entity.Reconc
 
 	return res
 }
+
+func convertRowListDbToEntitySimpleReconciliationJob(r dbgen.ListReconciliationJobsRow) *entity.SimpleReconciliationJob {
+	res := &entity.SimpleReconciliationJob{
+		ID:                       r.ID,
+		DiscrepancyThreshold:     float32(r.DiscrepancyThreshold),
+		SystemTransactionCsvPath: r.SystemTransactionCsvPath,
+		Status:                   entity.ReconciliationJobStatus(r.Status),
+		StartDate:                r.StartDate,
+		EndDate:                  r.EndDate,
+	}
+	r.BankTransactionCsvPaths.AssignTo(&res.BankTransactionCsvPaths)
+
+	return res
+}
