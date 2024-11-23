@@ -10,6 +10,7 @@ import (
 
 	"github.com/delly/amartha/common/logger"
 	"github.com/delly/amartha/entity"
+	"github.com/delly/amartha/handler/http/middleware"
 	reconciliatonjob "github.com/delly/amartha/service/reconciliaton_job"
 	"github.com/h2non/filetype"
 	"github.com/julienschmidt/httprouter"
@@ -40,9 +41,9 @@ func NewReconciliationJobHandler(finderService reconciliatonjob.Finder,
 
 // Register register reconciliation job handler to router
 func (h *ReconciliationJobHandler) Register(router *httprouter.Router) {
-	router.GET("/reconciliations", h.GetAllReconciliationJob)
-	router.GET("/reconciliations/:id", h.GetReconciliationJobByID)
-	router.POST("/reconciliations", h.CreateReconciliationJob)
+	router.GET("/reconciliations", middleware.PrependMiddleware(h.GetAllReconciliationJob, middleware.WithLogger))
+	router.GET("/reconciliations/:id", middleware.PrependMiddleware(h.GetReconciliationJobByID, middleware.WithLogger))
+	router.POST("/reconciliations", middleware.PrependMiddleware(h.CreateReconciliationJob, middleware.WithLogger))
 }
 
 // GetReconciliationJobByID get reconciliation job by id
