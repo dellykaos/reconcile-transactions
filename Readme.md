@@ -102,3 +102,214 @@ docker run --rm --name recon-job --env-file .env --platform=linux/amd64 delly/am
 ```
 
 Since file storage implementation used in this project is using local storage, so to ensure that create new request Reconcile and Process Reconcile Job works, you need to implement contract `FileStorageRepository` with storage that can be accessed by the docker container, for example store it in Google Cloud Storage, or something like that.
+
+## Documentation
+
+### Get Reconciliation List
+
+![get reconciliation list image](https://www.planttext.com/api/plantuml/png/XSz13e9030NGVK_nBq0aBaaqI50shemUOCI9rjGPCbF2zHqqId3Zkg__jsLK4xH_21ghEDZMkvQ5ZR9ts7DKxCGFHCegzeyvHHkGhTzYqt61Pdl48imM8dt68wsh0jSKQaJmShZxSwIwGZOB2bRxu7xPb9JmsFw5opp7m7gRD2GTIbHQTqdVhfu0)
+
+Path: `/reconciliations?limit=10&offset=0`<br/>
+Method: `GET`<br/>
+Query Params:
+
+- limit (integer)
+  - min: 1
+  - max: 100
+- offset (integer)
+  - min: 0
+
+Response:
+
+```json
+{
+    "data": [
+        {
+            "id": 1,
+            "status": "SUCCESS",
+            "discrepancy_threshold": 0,
+            "system_transaction_csv_path": "/Users/delly/latihan/paystone/amartha/temp_storage/1732370307103607000_1pFvighg/Recon test - system_trx (3).csv",
+            "bank_transaction_csv_paths": [
+                {
+                    "bank_name": "BCA",
+                    "file_path": "/Users/delly/latihan/paystone/amartha/temp_storage/1732370307104925000_kLqrbPOp/Recon test - bca_trx (1).csv"
+                },
+                {
+                    "bank_name": "BRI",
+                    "file_path": "/Users/delly/latihan/paystone/amartha/temp_storage/1732370307105323000_pHNa2RG2/Recon test - bri_trx (1).csv"
+                }
+            ],
+            "start_date": "2024-10-01T00:00:00Z",
+            "end_date": "2024-11-28T00:00:00Z"
+        }
+    ],
+    "meta": {
+        "limit": 10,
+        "offset": 0,
+        "total": 1
+    }
+}
+```
+
+### Get Reconciliation Job Request by ID
+
+![get reconciliation job request by id](https://www.planttext.com/api/plantuml/png/ZP7F3W4n48VlVOfv0R4H9mT1_BaBPrcxWv5gfJEDWtXtqrsBZGI7Dctw-xwPjYEMF4WyMLYWm18Bxmgob0jvfrkELc1k_SKO8R7uCxLc3D0PrfdncGQmcAsW6re8Twz7lzrGUJDDBZ7JoG3swg_2e0bT9RMPJg3JSWQK6DndCBVljFC2EnzTQG1UTLIKcdnA-bdVe6Ly0niewT9UtqWY0p6SWo-GcTnUZxzPUra65v93mxR0gbnRN7g7_ohhHXzNLflsceOPwQm_QUu0)
+
+Path: `/reconciliations/:id`<br/>
+Method: `GET`<br/>
+Params:
+
+- id (integer)
+
+Response:
+
+Success:
+Status code 200
+
+```json
+{
+    "data": {
+        "id": 1,
+        "status": "SUCCESS",
+        "system_transaction_csv_path": "/Users/delly/latihan/paystone/amartha/temp_storage/1732370307103607000_1pFvighg/Recon test - system_trx (3).csv",
+        "bank_transaction_csv_paths": [
+            {
+                "bank_name": "BCA",
+                "file_path": "/Users/delly/latihan/paystone/amartha/temp_storage/1732370307104925000_kLqrbPOp/Recon test - bca_trx (1).csv"
+            },
+            {
+                "bank_name": "BRI",
+                "file_path": "/Users/delly/latihan/paystone/amartha/temp_storage/1732370307105323000_pHNa2RG2/Recon test - bri_trx (1).csv"
+            }
+        ],
+        "discrepancy_threshold": 0,
+        "error_information": "",
+        "result": {
+            "total_transaction_processed": 14,
+            "total_transaction_matched": 13,
+            "total_transaction_unmatched": 1,
+            "total_discrepancy_amount": 2321979252,
+            "missing_transactions": [
+                {
+                    "id": "ABC-136",
+                    "amount": 2321231231,
+                    "type": "CREDIT",
+                    "time": "2024-11-25T02:44:21+07:00"
+                }
+            ],
+            "missing_bank_transactions": {
+                "BCA": [
+                    {
+                        "id": "BCA-132",
+                        "amount": 123,
+                        "type": "CREDIT",
+                        "time": "2024-11-23T00:00:00Z"
+                    },
+                    {
+                        "id": "BCA-133",
+                        "amount": 42131,
+                        "type": "DEBIT",
+                        "time": "2024-11-25T00:00:00Z"
+                    }
+                ],
+                "BRI": [
+                    {
+                        "id": "BRI-131",
+                        "amount": 241231,
+                        "type": "CREDIT",
+                        "time": "2024-11-18T00:00:00Z"
+                    },
+                    {
+                        "id": "BRI-132",
+                        "amount": 222222,
+                        "type": "CREDIT",
+                        "time": "2024-11-18T00:00:00Z"
+                    },
+                    {
+                        "id": "BRI-133",
+                        "amount": 242314,
+                        "type": "CREDIT",
+                        "time": "2024-11-28T00:00:00Z"
+                    }
+                ]
+            }
+        },
+        "start_date": "2024-10-01T00:00:00Z",
+        "end_date": "2024-11-28T00:00:00Z",
+        "created_at": "2024-11-23T20:58:27.119625+07:00",
+        "updated_at": "2024-11-23T20:58:27.119625+07:00"
+    }
+}
+```
+
+Not Found:
+Status Code 404
+
+```json
+{
+    "message": "reconciliation job not found"
+}
+```
+
+### Create Reconciliation Job Request
+
+![create reconciliation job request](https://www.planttext.com/api/plantuml/png/RP1B3i8m34JtFeKlKF5PTe5ALNKBed20q1em2WaaBhq-ATz4OcF9dZTZouKNvQI_QDnGQqsejvwyOAtj020iclugEqyEiyLBMruvn_MgsUB4ZNtBcfMmDHu--iZMhAaHwzIHSlJgJdW84uZ6c4MHYRSgtvRd0ZpRlOUgJFWyQD8xyqEGkoWaeEFLNsm-dU70SafvACXquH_m0000)
+
+Path: `/reconciliations`<br/>
+Method: `POST`<br/>
+Form Data:
+
+- start_date (date)
+- end_date (date)
+- system_transaction_file (file)
+- discrepancy_threshold (float) - in percentage
+  - Min: 0
+- bank_names (string) - can be multiple
+- bank_transaction_files (file) - can be multiple
+
+cURL example:
+
+```shell
+curl --location 'localhost:8080/reconciliations' \
+--form 'start_date="2024-10-01"' \
+--form 'end_date="2024-11-28"' \
+--form 'system_transaction_file=@"/path/to/system/file.csv"' \
+--form 'bank_names="BCA"' \
+--form 'bank_transaction_files=@"/path/to/bca/file.csv"' \
+--form 'bank_names="BRI"' \
+--form 'bank_transaction_files=@"/path/to/bri/file.csv"' \
+--form 'discrepancy_threshold="0.1"'
+```
+
+Response:
+
+```json
+{
+    "data": {
+        "id": 1,
+        "status": "PENDING",
+        "system_transaction_csv_path": "/Users/delly/latihan/paystone/amartha/temp_storage/1732370307103607000_1pFvighg/Recon test - system_trx (3).csv",
+        "bank_transaction_csv_paths": [
+            {
+                "bank_name": "BCA",
+                "file_path": "/Users/delly/latihan/paystone/amartha/temp_storage/1732370307104925000_kLqrbPOp/Recon test - bca_trx (1).csv"
+            },
+            {
+                "bank_name": "BRI",
+                "file_path": "/Users/delly/latihan/paystone/amartha/temp_storage/1732370307105323000_pHNa2RG2/Recon test - bri_trx (1).csv"
+            }
+        ],
+        "discrepancy_threshold": 0,
+        "error_information": "",
+        "result": null,
+        "start_date": "2024-10-01T00:00:00Z",
+        "end_date": "2024-11-28T00:00:00Z",
+        "created_at": "2024-11-23T20:58:27.119625+07:00",
+        "updated_at": "2024-11-23T20:58:27.119625+07:00"
+    }
+}
+```
+
+### Reconciliation Job Process
+
+![reconciliation job process](https://www.planttext.com/api/plantuml/png/ZL513i8m3Blt5Vx0Fh03cc3Ym94VT5q6GwMPsbJmVB9nO1i8k5HAxDY9MoMnKVBLuqYEW-izuS0DzfvlnaWlMdz2fjukSXXRnGRrjiI91DPxn173XPjawYqAHUViKd79CQofrWi2ppl0qkLDYEwz6FA9PbFeE8TMPptpe4K4MNT-4HHPwwvbXyYEKlenCrwSXzRAp1sQfkG4OQJi9X5TeBEQNJk9VClZATOkR6awvQyOb6agVVKlpGC0)

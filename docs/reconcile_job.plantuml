@@ -9,7 +9,7 @@ alt no recon jobs
 else recon jobs found
   loop for each recon job
     ReconCronJob -> ReconCronJob: process recon job
-    ReconCronJob -> DB: update recon job status to processing
+    ReconCronJob -> DB: update recon job status to success or failed
     DB --> ReconCronJob: return updated recon job
   end
   ReconCronJob --> ReconCronJob: exit
