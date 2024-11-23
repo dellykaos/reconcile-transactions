@@ -11,6 +11,7 @@ import (
 
 	"github.com/delly/amartha/config"
 	handler "github.com/delly/amartha/handler/http"
+	filestorage "github.com/delly/amartha/repository/file_storage"
 	localfilestorage "github.com/delly/amartha/repository/file_storage/local_file_storage"
 	dbgen "github.com/delly/amartha/repository/postgresql"
 	reconciliatonjob "github.com/delly/amartha/service/reconciliaton_job"
@@ -44,10 +45,13 @@ func main() {
 	}()
 
 	querier := dbgen.New(pool)
-	currentDir, err := os.Getwd()
-	checkError(err)
-	fileDir := fmt.Sprintf("%s%s", currentDir, cfg.LocalStorage.Dir)
-	fileStorage := localfilestorage.NewStorage(fileDir)
+	var fileStorage filestorage.FileStorageRepository
+	if cfg.LocalStorage.UseLocal {
+		currentDir, err := os.Getwd()
+		checkError(err)
+		fileDir := fmt.Sprintf("%s%s", currentDir, cfg.LocalStorage.Dir)
+		fileStorage = localfilestorage.NewStorage(fileDir)
+	}
 	reconFinderSvc := reconciliatonjob.NewFinderService(querier)
 	reconCreatorSvc := reconciliatonjob.NewCreatorService(querier, fileStorage)
 	reconJobHandler := handler.NewReconciliationJobHandler(reconFinderSvc, reconCreatorSvc)

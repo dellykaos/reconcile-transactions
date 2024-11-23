@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/delly/amartha/config"
+	filestorage "github.com/delly/amartha/repository/file_storage"
 	localfilestorage "github.com/delly/amartha/repository/file_storage/local_file_storage"
 	dbgen "github.com/delly/amartha/repository/postgresql"
 	reconciliatonjob "github.com/delly/amartha/service/reconciliaton_job"
@@ -39,10 +40,13 @@ func main() {
 	}()
 
 	querier := dbgen.New(pool)
-	currentDir, err := os.Getwd()
-	checkError(err)
-	fileDir := fmt.Sprintf("%s%s", currentDir, cfg.LocalStorage.Dir)
-	fileStorage := localfilestorage.NewStorage(fileDir)
+	var fileStorage filestorage.FileStorageRepository
+	if cfg.LocalStorage.UseLocal {
+		currentDir, err := os.Getwd()
+		checkError(err)
+		fileDir := fmt.Sprintf("%s%s", currentDir, cfg.LocalStorage.Dir)
+		fileStorage = localfilestorage.NewStorage(fileDir)
+	}
 	reconProcesserService := reconciliatonjob.NewProcesserService(querier, fileStorage)
 
 	logger.Println("Processing reconciliation job...")

@@ -28,7 +28,8 @@ type ServerConfig struct {
 }
 
 type LocalStorageConfig struct {
-	Dir string `env:"LOCAL_STORAGE_DIR"`
+	UseLocal bool   `env:"USE_LOCAL_STORAGE"`
+	Dir      string `env:"LOCAL_STORAGE_DIR"`
 }
 
 // NewConfig creates an instance of Config.
