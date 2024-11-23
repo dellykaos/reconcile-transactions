@@ -7,6 +7,20 @@ The tech stack used for this services are:
 - Golang version 1.23.0
 - PostgreSQL 14.8
 
+**Table of Content:**
+
+- [How To Run](#how-to-run)
+  - [Setup Environment](#1-setup-environment)
+  - [Setup Database](#2-setup-database)
+  - [Run API](#3-run-api)
+  - [Run Reconcile Job](#4-run-reconcile-job)
+  - [Create Docker Container](#5-create-docker-container-for-deployment)
+- [Documentation](#documentation)
+  - [Get List Reconcile Job](#get-reconciliation-list)
+  - [Get Reconcile Job By ID](#get-reconciliation-job-request-by-id)
+  - [Create Reconcile Job](#create-reconciliation-job-request)
+  - [Process Reconcile Job](#reconciliation-job-process)
+
 ## How to run
 
 ### 1. Setup environment
