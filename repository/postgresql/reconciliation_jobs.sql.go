@@ -62,62 +62,6 @@ func (q *Queries) CreateReconciliationJob(ctx context.Context, arg CreateReconci
 	return i, err
 }
 
-const failedReconciliationJob = `-- name: FailedReconciliationJob :one
-UPDATE reconciliation_jobs SET status = 'FAILED', error_information = $2 WHERE id = $1 RETURNING id, status, system_transaction_csv_path, bank_transaction_csv_paths, discrepancy_threshold, start_date, end_date, result, created_at, updated_at, error_information
-`
-
-type FailedReconciliationJobParams struct {
-	ID               int64          `db:"id"`
-	ErrorInformation sql.NullString `db:"error_information"`
-}
-
-func (q *Queries) FailedReconciliationJob(ctx context.Context, arg FailedReconciliationJobParams) (ReconciliationJob, error) {
-	row := q.db.QueryRow(ctx, failedReconciliationJob, arg.ID, arg.ErrorInformation)
-	var i ReconciliationJob
-	err := row.Scan(
-		&i.ID,
-		&i.Status,
-		&i.SystemTransactionCsvPath,
-		&i.BankTransactionCsvPaths,
-		&i.DiscrepancyThreshold,
-		&i.StartDate,
-		&i.EndDate,
-		&i.Result,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-		&i.ErrorInformation,
-	)
-	return i, err
-}
-
-const finishReconciliationJob = `-- name: FinishReconciliationJob :one
-UPDATE reconciliation_jobs SET status = 'SUCCESS', result = $2 WHERE id = $1 RETURNING id, status, system_transaction_csv_path, bank_transaction_csv_paths, discrepancy_threshold, start_date, end_date, result, created_at, updated_at, error_information
-`
-
-type FinishReconciliationJobParams struct {
-	ID     int64        `db:"id"`
-	Result pgtype.JSONB `db:"result"`
-}
-
-func (q *Queries) FinishReconciliationJob(ctx context.Context, arg FinishReconciliationJobParams) (ReconciliationJob, error) {
-	row := q.db.QueryRow(ctx, finishReconciliationJob, arg.ID, arg.Result)
-	var i ReconciliationJob
-	err := row.Scan(
-		&i.ID,
-		&i.Status,
-		&i.SystemTransactionCsvPath,
-		&i.BankTransactionCsvPaths,
-		&i.DiscrepancyThreshold,
-		&i.StartDate,
-		&i.EndDate,
-		&i.Result,
-		&i.CreatedAt,
-		&i.UpdatedAt,
-		&i.ErrorInformation,
-	)
-	return i, err
-}
-
 const getReconciliationJobById = `-- name: GetReconciliationJobById :one
 SELECT id, status, system_transaction_csv_path, bank_transaction_csv_paths, discrepancy_threshold, start_date, end_date, result, created_at, updated_at, error_information FROM reconciliation_jobs WHERE id = $1
 `
@@ -222,17 +166,45 @@ func (q *Queries) ListReconciliationJobs(ctx context.Context, arg ListReconcilia
 	return items, nil
 }
 
-const updateReconciliationJobStatus = `-- name: UpdateReconciliationJobStatus :one
-UPDATE reconciliation_jobs SET status = $2 WHERE id = $1 RETURNING id, status, system_transaction_csv_path, bank_transaction_csv_paths, discrepancy_threshold, start_date, end_date, result, created_at, updated_at, error_information
+const saveFailedReconciliationJob = `-- name: SaveFailedReconciliationJob :one
+UPDATE reconciliation_jobs SET status = 'FAILED', error_information = $2 WHERE id = $1 RETURNING id, status, system_transaction_csv_path, bank_transaction_csv_paths, discrepancy_threshold, start_date, end_date, result, created_at, updated_at, error_information
 `
 
-type UpdateReconciliationJobStatusParams struct {
-	ID     int64  `db:"id"`
-	Status string `db:"status"`
+type SaveFailedReconciliationJobParams struct {
+	ID               int64          `db:"id"`
+	ErrorInformation sql.NullString `db:"error_information"`
 }
 
-func (q *Queries) UpdateReconciliationJobStatus(ctx context.Context, arg UpdateReconciliationJobStatusParams) (ReconciliationJob, error) {
-	row := q.db.QueryRow(ctx, updateReconciliationJobStatus, arg.ID, arg.Status)
+func (q *Queries) SaveFailedReconciliationJob(ctx context.Context, arg SaveFailedReconciliationJobParams) (ReconciliationJob, error) {
+	row := q.db.QueryRow(ctx, saveFailedReconciliationJob, arg.ID, arg.ErrorInformation)
+	var i ReconciliationJob
+	err := row.Scan(
+		&i.ID,
+		&i.Status,
+		&i.SystemTransactionCsvPath,
+		&i.BankTransactionCsvPaths,
+		&i.DiscrepancyThreshold,
+		&i.StartDate,
+		&i.EndDate,
+		&i.Result,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.ErrorInformation,
+	)
+	return i, err
+}
+
+const saveSuccessReconciliationJob = `-- name: SaveSuccessReconciliationJob :one
+UPDATE reconciliation_jobs SET status = 'SUCCESS', result = $2 WHERE id = $1 RETURNING id, status, system_transaction_csv_path, bank_transaction_csv_paths, discrepancy_threshold, start_date, end_date, result, created_at, updated_at, error_information
+`
+
+type SaveSuccessReconciliationJobParams struct {
+	ID     int64        `db:"id"`
+	Result pgtype.JSONB `db:"result"`
+}
+
+func (q *Queries) SaveSuccessReconciliationJob(ctx context.Context, arg SaveSuccessReconciliationJobParams) (ReconciliationJob, error) {
+	row := q.db.QueryRow(ctx, saveSuccessReconciliationJob, arg.ID, arg.Result)
 	var i ReconciliationJob
 	err := row.Scan(
 		&i.ID,

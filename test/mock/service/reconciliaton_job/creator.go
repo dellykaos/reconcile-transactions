@@ -96,31 +96,31 @@ func (mr *MockCreatorRepositoryMockRecorder) CreateReconciliationJob(ctx, job an
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateReconciliationJob", reflect.TypeOf((*MockCreatorRepository)(nil).CreateReconciliationJob), ctx, job)
 }
 
-// MockFileRepository is a mock of FileRepository interface.
-type MockFileRepository struct {
+// MockFileStorer is a mock of FileStorer interface.
+type MockFileStorer struct {
 	ctrl     *gomock.Controller
-	recorder *MockFileRepositoryMockRecorder
+	recorder *MockFileStorerMockRecorder
 }
 
-// MockFileRepositoryMockRecorder is the mock recorder for MockFileRepository.
-type MockFileRepositoryMockRecorder struct {
-	mock *MockFileRepository
+// MockFileStorerMockRecorder is the mock recorder for MockFileStorer.
+type MockFileStorerMockRecorder struct {
+	mock *MockFileStorer
 }
 
-// NewMockFileRepository creates a new mock instance.
-func NewMockFileRepository(ctrl *gomock.Controller) *MockFileRepository {
-	mock := &MockFileRepository{ctrl: ctrl}
-	mock.recorder = &MockFileRepositoryMockRecorder{mock}
+// NewMockFileStorer creates a new mock instance.
+func NewMockFileStorer(ctrl *gomock.Controller) *MockFileStorer {
+	mock := &MockFileStorer{ctrl: ctrl}
+	mock.recorder = &MockFileStorerMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockFileRepository) EXPECT() *MockFileRepositoryMockRecorder {
+func (m *MockFileStorer) EXPECT() *MockFileStorerMockRecorder {
 	return m.recorder
 }
 
 // Store mocks base method.
-func (m *MockFileRepository) Store(ctx context.Context, file *filestorage.File) (string, error) {
+func (m *MockFileStorer) Store(ctx context.Context, file *filestorage.File) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Store", ctx, file)
 	ret0, _ := ret[0].(string)
@@ -129,7 +129,7 @@ func (m *MockFileRepository) Store(ctx context.Context, file *filestorage.File) 
 }
 
 // Store indicates an expected call of Store.
-func (mr *MockFileRepositoryMockRecorder) Store(ctx, file any) *gomock.Call {
+func (mr *MockFileStorerMockRecorder) Store(ctx, file any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Store", reflect.TypeOf((*MockFileRepository)(nil).Store), ctx, file)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Store", reflect.TypeOf((*MockFileStorer)(nil).Store), ctx, file)
 }

@@ -14,13 +14,6 @@ import (
 	dbgen "github.com/delly/amartha/repository/postgresql"
 )
 
-type fileType string
-
-const (
-	systemTransaction fileType = "system_transaction"
-	bankTransaction   fileType = "bank_transaction"
-)
-
 type bankMappedTransactions struct {
 	bankName     string
 	transactions map[string][]*entity.Transaction
@@ -33,14 +26,13 @@ type Processer interface {
 
 // ProcesserRepository is a dependency of repository that needed to process reconciliation job
 type ProcesserRepository interface {
-	FailedReconciliationJob(ctx context.Context, arg dbgen.FailedReconciliationJobParams) (dbgen.ReconciliationJob, error)
-	FinishReconciliationJob(ctx context.Context, arg dbgen.FinishReconciliationJobParams) (dbgen.ReconciliationJob, error)
 	ListPendingReconciliationJobs(ctx context.Context) ([]dbgen.ReconciliationJob, error)
-	UpdateReconciliationJobStatus(ctx context.Context, arg dbgen.UpdateReconciliationJobStatusParams) (dbgen.ReconciliationJob, error)
+	SaveFailedReconciliationJob(ctx context.Context, arg dbgen.SaveFailedReconciliationJobParams) (dbgen.ReconciliationJob, error)
+	SaveSuccessReconciliationJob(ctx context.Context, arg dbgen.SaveSuccessReconciliationJobParams) (dbgen.ReconciliationJob, error)
 }
 
-// StorageGetter is a dependency of repository that needed to get file from storage
-type StorageGetter interface {
+// FileGetter is a dependency of repository that needed to get file from storage
+type FileGetter interface {
 	Get(ctx context.Context, filePath string) (*filestorage.File, error)
 }
 
@@ -48,13 +40,13 @@ type StorageGetter interface {
 // pending reconciliation job
 type ProcesserService struct {
 	repo    ProcesserRepository
-	storage StorageGetter
+	storage FileGetter
 }
 
 var _ = Processer(&ProcesserService{})
 
 // NewProcesserService create new processer service
-func NewProcesserService(repo ProcesserRepository, storage StorageGetter) *ProcesserService {
+func NewProcesserService(repo ProcesserRepository, storage FileGetter) *ProcesserService {
 	return &ProcesserService{repo: repo, storage: storage}
 }
 
@@ -67,11 +59,8 @@ func (s *ProcesserService) Process(ctx context.Context) error {
 
 	for _, job := range jobs {
 		if err = s.processReconciliationJob(ctx, job); err != nil {
-			// skip err save processing job, so it will be processed again
-			if err != errSaveProcessingJob {
-				job.Status = entity.ReconciliationJobStatusFailed
-				job.ErrorInformation = err.Error()
-			}
+			job.Status = entity.ReconciliationJobStatusFailed
+			job.ErrorInformation = err.Error()
 		}
 		if job.Status == entity.ReconciliationJobStatusFailed {
 			if s.saveFailedJob(ctx, job); err != nil {
@@ -88,11 +77,11 @@ func (s *ProcesserService) Process(ctx context.Context) error {
 }
 
 func (s *ProcesserService) saveSuccessJob(ctx context.Context, job *entity.ReconciliationJob) error {
-	finishParams := dbgen.FinishReconciliationJobParams{
+	params := dbgen.SaveSuccessReconciliationJobParams{
 		ID: job.ID,
 	}
-	finishParams.Result.Set(job.Result)
-	if _, err := s.repo.FinishReconciliationJob(ctx, finishParams); err != nil {
+	params.Result.Set(job.Result)
+	if _, err := s.repo.SaveSuccessReconciliationJob(ctx, params); err != nil {
 		return err
 	}
 
@@ -100,7 +89,7 @@ func (s *ProcesserService) saveSuccessJob(ctx context.Context, job *entity.Recon
 }
 
 func (s *ProcesserService) saveFailedJob(ctx context.Context, job *entity.ReconciliationJob) error {
-	if _, err := s.repo.FailedReconciliationJob(ctx, dbgen.FailedReconciliationJobParams{
+	if _, err := s.repo.SaveFailedReconciliationJob(ctx, dbgen.SaveFailedReconciliationJobParams{
 		ID:               job.ID,
 		ErrorInformation: sql.NullString{String: job.ErrorInformation, Valid: true},
 	}); err != nil {
@@ -110,22 +99,7 @@ func (s *ProcesserService) saveFailedJob(ctx context.Context, job *entity.Reconc
 	return nil
 }
 
-func (s *ProcesserService) saveProcessingJob(ctx context.Context, job *entity.ReconciliationJob) error {
-	if _, err := s.repo.UpdateReconciliationJobStatus(ctx, dbgen.UpdateReconciliationJobStatusParams{
-		ID:     job.ID,
-		Status: string(entity.ReconciliationJobStatusProcessing),
-	}); err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (s *ProcesserService) processReconciliationJob(ctx context.Context, job *entity.ReconciliationJob) error {
-	if err := s.saveProcessingJob(ctx, job); err != nil {
-		return errSaveProcessingJob
-	}
-
 	systemTrxFile, bankFiles, err := s.getCSVFiles(ctx, job)
 	if err != nil {
 		return err

@@ -20,15 +20,15 @@ type CreatorRepository interface {
 	CreateReconciliationJob(ctx context.Context, job dbgen.CreateReconciliationJobParams) (dbgen.ReconciliationJob, error)
 }
 
-// FileRepository is a contract to for file repository
-type FileRepository interface {
+// FileStorer is a contract to store file
+type FileStorer interface {
 	Store(ctx context.Context, file *filestorage.File) (string, error)
 }
 
 // CreatorService is a service to create reconciliation job
 type CreatorService struct {
 	repo     CreatorRepository
-	fileRepo FileRepository
+	fileRepo FileStorer
 }
 
 // File is a struct to hold metadata of csv file
@@ -57,7 +57,7 @@ var _ = Creator(&CreatorService{})
 
 // NewCreatorService create new creator service
 func NewCreatorService(repo CreatorRepository,
-	fileRepo FileRepository) *CreatorService {
+	fileRepo FileStorer) *CreatorService {
 	return &CreatorService{
 		repo:     repo,
 		fileRepo: fileRepo,

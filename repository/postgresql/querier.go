@@ -11,12 +11,11 @@ import (
 type Querier interface {
 	CountReconciliationJobs(ctx context.Context) (int64, error)
 	CreateReconciliationJob(ctx context.Context, arg CreateReconciliationJobParams) (ReconciliationJob, error)
-	FailedReconciliationJob(ctx context.Context, arg FailedReconciliationJobParams) (ReconciliationJob, error)
-	FinishReconciliationJob(ctx context.Context, arg FinishReconciliationJobParams) (ReconciliationJob, error)
 	GetReconciliationJobById(ctx context.Context, id int64) (ReconciliationJob, error)
 	ListPendingReconciliationJobs(ctx context.Context) ([]ReconciliationJob, error)
 	ListReconciliationJobs(ctx context.Context, arg ListReconciliationJobsParams) ([]ReconciliationJob, error)
-	UpdateReconciliationJobStatus(ctx context.Context, arg UpdateReconciliationJobStatusParams) (ReconciliationJob, error)
+	SaveFailedReconciliationJob(ctx context.Context, arg SaveFailedReconciliationJobParams) (ReconciliationJob, error)
+	SaveSuccessReconciliationJob(ctx context.Context, arg SaveSuccessReconciliationJobParams) (ReconciliationJob, error)
 }
 
 var _ Querier = (*Queries)(nil)

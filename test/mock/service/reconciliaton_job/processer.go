@@ -78,36 +78,6 @@ func (m *MockProcesserRepository) EXPECT() *MockProcesserRepositoryMockRecorder 
 	return m.recorder
 }
 
-// FailedReconciliationJob mocks base method.
-func (m *MockProcesserRepository) FailedReconciliationJob(ctx context.Context, arg dbgen.FailedReconciliationJobParams) (dbgen.ReconciliationJob, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FailedReconciliationJob", ctx, arg)
-	ret0, _ := ret[0].(dbgen.ReconciliationJob)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// FailedReconciliationJob indicates an expected call of FailedReconciliationJob.
-func (mr *MockProcesserRepositoryMockRecorder) FailedReconciliationJob(ctx, arg any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FailedReconciliationJob", reflect.TypeOf((*MockProcesserRepository)(nil).FailedReconciliationJob), ctx, arg)
-}
-
-// FinishReconciliationJob mocks base method.
-func (m *MockProcesserRepository) FinishReconciliationJob(ctx context.Context, arg dbgen.FinishReconciliationJobParams) (dbgen.ReconciliationJob, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "FinishReconciliationJob", ctx, arg)
-	ret0, _ := ret[0].(dbgen.ReconciliationJob)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// FinishReconciliationJob indicates an expected call of FinishReconciliationJob.
-func (mr *MockProcesserRepositoryMockRecorder) FinishReconciliationJob(ctx, arg any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FinishReconciliationJob", reflect.TypeOf((*MockProcesserRepository)(nil).FinishReconciliationJob), ctx, arg)
-}
-
 // ListPendingReconciliationJobs mocks base method.
 func (m *MockProcesserRepository) ListPendingReconciliationJobs(ctx context.Context) ([]dbgen.ReconciliationJob, error) {
 	m.ctrl.T.Helper()
@@ -123,46 +93,61 @@ func (mr *MockProcesserRepositoryMockRecorder) ListPendingReconciliationJobs(ctx
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListPendingReconciliationJobs", reflect.TypeOf((*MockProcesserRepository)(nil).ListPendingReconciliationJobs), ctx)
 }
 
-// UpdateReconciliationJobStatus mocks base method.
-func (m *MockProcesserRepository) UpdateReconciliationJobStatus(ctx context.Context, arg dbgen.UpdateReconciliationJobStatusParams) (dbgen.ReconciliationJob, error) {
+// SaveFailedReconciliationJob mocks base method.
+func (m *MockProcesserRepository) SaveFailedReconciliationJob(ctx context.Context, arg dbgen.SaveFailedReconciliationJobParams) (dbgen.ReconciliationJob, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateReconciliationJobStatus", ctx, arg)
+	ret := m.ctrl.Call(m, "SaveFailedReconciliationJob", ctx, arg)
 	ret0, _ := ret[0].(dbgen.ReconciliationJob)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// UpdateReconciliationJobStatus indicates an expected call of UpdateReconciliationJobStatus.
-func (mr *MockProcesserRepositoryMockRecorder) UpdateReconciliationJobStatus(ctx, arg any) *gomock.Call {
+// SaveFailedReconciliationJob indicates an expected call of SaveFailedReconciliationJob.
+func (mr *MockProcesserRepositoryMockRecorder) SaveFailedReconciliationJob(ctx, arg any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateReconciliationJobStatus", reflect.TypeOf((*MockProcesserRepository)(nil).UpdateReconciliationJobStatus), ctx, arg)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveFailedReconciliationJob", reflect.TypeOf((*MockProcesserRepository)(nil).SaveFailedReconciliationJob), ctx, arg)
 }
 
-// MockStorageGetter is a mock of StorageGetter interface.
-type MockStorageGetter struct {
+// SaveSuccessReconciliationJob mocks base method.
+func (m *MockProcesserRepository) SaveSuccessReconciliationJob(ctx context.Context, arg dbgen.SaveSuccessReconciliationJobParams) (dbgen.ReconciliationJob, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SaveSuccessReconciliationJob", ctx, arg)
+	ret0, _ := ret[0].(dbgen.ReconciliationJob)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SaveSuccessReconciliationJob indicates an expected call of SaveSuccessReconciliationJob.
+func (mr *MockProcesserRepositoryMockRecorder) SaveSuccessReconciliationJob(ctx, arg any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SaveSuccessReconciliationJob", reflect.TypeOf((*MockProcesserRepository)(nil).SaveSuccessReconciliationJob), ctx, arg)
+}
+
+// MockFileGetter is a mock of FileGetter interface.
+type MockFileGetter struct {
 	ctrl     *gomock.Controller
-	recorder *MockStorageGetterMockRecorder
+	recorder *MockFileGetterMockRecorder
 }
 
-// MockStorageGetterMockRecorder is the mock recorder for MockStorageGetter.
-type MockStorageGetterMockRecorder struct {
-	mock *MockStorageGetter
+// MockFileGetterMockRecorder is the mock recorder for MockFileGetter.
+type MockFileGetterMockRecorder struct {
+	mock *MockFileGetter
 }
 
-// NewMockStorageGetter creates a new mock instance.
-func NewMockStorageGetter(ctrl *gomock.Controller) *MockStorageGetter {
-	mock := &MockStorageGetter{ctrl: ctrl}
-	mock.recorder = &MockStorageGetterMockRecorder{mock}
+// NewMockFileGetter creates a new mock instance.
+func NewMockFileGetter(ctrl *gomock.Controller) *MockFileGetter {
+	mock := &MockFileGetter{ctrl: ctrl}
+	mock.recorder = &MockFileGetterMockRecorder{mock}
 	return mock
 }
 
 // EXPECT returns an object that allows the caller to indicate expected use.
-func (m *MockStorageGetter) EXPECT() *MockStorageGetterMockRecorder {
+func (m *MockFileGetter) EXPECT() *MockFileGetterMockRecorder {
 	return m.recorder
 }
 
 // Get mocks base method.
-func (m *MockStorageGetter) Get(ctx context.Context, filePath string) (*filestorage.File, error) {
+func (m *MockFileGetter) Get(ctx context.Context, filePath string) (*filestorage.File, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Get", ctx, filePath)
 	ret0, _ := ret[0].(*filestorage.File)
@@ -171,7 +156,7 @@ func (m *MockStorageGetter) Get(ctx context.Context, filePath string) (*filestor
 }
 
 // Get indicates an expected call of Get.
-func (mr *MockStorageGetterMockRecorder) Get(ctx, filePath any) *gomock.Call {
+func (mr *MockFileGetterMockRecorder) Get(ctx, filePath any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockStorageGetter)(nil).Get), ctx, filePath)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockFileGetter)(nil).Get), ctx, filePath)
 }
