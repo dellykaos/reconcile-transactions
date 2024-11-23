@@ -8,6 +8,7 @@ import (
 
 // Config holds the configuration for the application.
 type Config struct {
+	Env          string `env:"ENV,default=development"`
 	Database     DatabaseConfig
 	Server       ServerConfig
 	LocalStorage LocalStorageConfig

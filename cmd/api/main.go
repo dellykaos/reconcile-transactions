@@ -3,12 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"github.com/delly/amartha/common"
 	"github.com/delly/amartha/config"
 	handler "github.com/delly/amartha/handler/http"
 	filestorage "github.com/delly/amartha/repository/file_storage"
@@ -17,17 +17,17 @@ import (
 	reconciliatonjob "github.com/delly/amartha/service/reconciliaton_job"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/julienschmidt/httprouter"
+	"go.uber.org/zap/zapcore"
 )
 
 func main() {
 	ctx := context.Background()
-	logger := log.Default()
-	logger.Println("Loading configuration...")
 	cfg, err := config.NewConfig(".env")
 	checkError(err)
-	logger.Println("Configuration loaded")
 
-	logger.Println("Connecting to database...")
+	common.SetupLogger(cfg.Env)
+	logger := common.Logger()
+	logger.Info("Connecting to database...")
 	connStr := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
 		cfg.Database.User,
 		cfg.Database.Password,
@@ -37,11 +37,11 @@ func main() {
 	)
 	pool, err := pgxpool.Connect(ctx, connStr)
 	checkError(err)
-	logger.Println("Connected to database")
+	logger.Info("Connected to database")
 	defer func() {
-		logger.Println("Closing database connection...")
+		logger.Info("Closing database connection...")
 		pool.Close()
-		logger.Println("Database connection closed")
+		logger.Info("Database connection closed")
 	}()
 
 	querier := dbgen.New(pool)
@@ -67,21 +67,24 @@ func main() {
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, os.Interrupt, syscall.SIGTERM)
 	go func(s *http.Server) {
-		log.Printf("server is listening at %s", s.Addr)
+		logger.Info(fmt.Sprintf("server is listening at %s", s.Addr))
 		if err := s.ListenAndServe(); err != nil {
 			if err != http.ErrServerClosed {
-				logger.Panic(err)
+				logger.Panic(err.Error(), zapcore.Field{
+					Key:       "error",
+					Interface: err,
+				})
 			}
 		}
 	}(&srv)
 	<-signalChan
 
 	if err := srv.Shutdown(ctx); err != nil {
-		log.Printf("server shutdown failed: %v", err)
+		logger.Error(fmt.Sprintf("server shutdown failed: %v", err))
 		return
 	}
 
-	logger.Println("exiting...")
+	logger.Info("exiting...")
 }
 
 func checkError(err error) {

@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"encoding/csv"
-	"fmt"
 	"io"
 	"slices"
 	"strconv"
@@ -14,6 +13,7 @@ import (
 	"github.com/delly/amartha/entity"
 	filestorage "github.com/delly/amartha/repository/file_storage"
 	dbgen "github.com/delly/amartha/repository/postgresql"
+	"go.uber.org/zap"
 )
 
 type bankMappedTransactions struct {
@@ -43,36 +43,49 @@ type FileGetter interface {
 type ProcesserService struct {
 	repo    ProcesserRepository
 	storage FileGetter
+	log     *zap.Logger
 }
 
 var _ = Processer(&ProcesserService{})
 
 // NewProcesserService create new processer service
 func NewProcesserService(repo ProcesserRepository, storage FileGetter) *ProcesserService {
-	return &ProcesserService{repo: repo, storage: storage}
+	return &ProcesserService{
+		repo:    repo,
+		storage: storage,
+		log:     common.Logger().With(zap.String("service", "reconciliation_job_processer"))}
 }
 
 // Process process pending reconciliation job
 func (s *ProcesserService) Process(ctx context.Context) error {
+	log := s.logWithMethod("Process")
 	jobs, err := s.getPendingReconciliationJobs(ctx)
 	if err != nil {
+		log.Error("failed to get pending reconciliation jobs", zap.Error(err))
 		return err
 	}
 
+	if len(jobs) == 0 {
+		log.Info("no pending reconciliation job")
+		return nil
+	}
+
 	for _, job := range jobs {
+		log.Info("processing reconciliation job", zap.Int64("job_id", job.ID))
 		if err = s.processReconciliationJob(ctx, job); err != nil {
 			job.Status = entity.ReconciliationJobStatusFailed
 			job.ErrorInformation = err.Error()
 		}
 		if job.Status == entity.ReconciliationJobStatusFailed {
 			if s.saveFailedJob(ctx, job); err != nil {
-				fmt.Printf("failed to update job: %d status to failed with error: %v\n", job.ID, err)
+				log.Error("failed to update job status to failed", zap.Error(err), zap.Int64("job_id", job.ID))
 			}
 		} else if job.Status == entity.ReconciliationJobStatusSuccess {
 			if err = s.saveSuccessJob(ctx, job); err != nil {
-				fmt.Printf("failed to save success job: %d with error: %v\n", job.ID, err)
+				log.Error("failed to update job status to success", zap.Error(err), zap.Int64("job_id", job.ID))
 			}
 		}
+		log.Info("reconciliation job processed", zap.Int64("job_id", job.ID))
 	}
 
 	return nil
@@ -102,8 +115,10 @@ func (s *ProcesserService) saveFailedJob(ctx context.Context, job *entity.Reconc
 }
 
 func (s *ProcesserService) processReconciliationJob(ctx context.Context, job *entity.ReconciliationJob) error {
+	log := s.logWithMethod("processReconciliationJob")
 	systemTrxFile, bankFiles, err := s.getCSVFiles(ctx, job)
 	if err != nil {
+		log.Error("failed to get csv files", zap.Error(err), zap.Int64("job_id", job.ID))
 		return err
 	}
 
@@ -113,6 +128,7 @@ func (s *ProcesserService) processReconciliationJob(ctx context.Context, job *en
 	if err = s.readCSVFile(systemTrxFile, func(record []string) error {
 		trx, err := s.convertSystemTransactionRecordToTransaction(record)
 		if err != nil {
+			log.Error("failed to convert system transaction record to transaction", zap.Error(err), zap.Strings("record", record))
 			return err
 		}
 		notInRange := trx.Time.Before(startDateTime) || trx.Time.After(endDateTime)
@@ -131,6 +147,7 @@ func (s *ProcesserService) processReconciliationJob(ctx context.Context, job *en
 		if err = s.readCSVFile(file, func(record []string) error {
 			trx, err := s.convertBankTransactionRecordToTransaction(record)
 			if err != nil {
+				log.Error("failed to convert bank transaction record to transaction", zap.Error(err), zap.Strings("record", record))
 				return err
 			}
 			notInRange := trx.Time.Before(startDateTime) || trx.Time.After(endDateTime)
@@ -325,4 +342,8 @@ func (s *ProcesserService) getPendingReconciliationJobs(ctx context.Context) ([]
 	}
 
 	return result, nil
+}
+
+func (s *ProcesserService) logWithMethod(method string) *zap.Logger {
+	return s.log.With(zap.String("method", method))
 }

@@ -3,9 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 
+	"github.com/delly/amartha/common"
 	"github.com/delly/amartha/config"
 	filestorage "github.com/delly/amartha/repository/file_storage"
 	localfilestorage "github.com/delly/amartha/repository/file_storage/local_file_storage"
@@ -16,13 +16,11 @@ import (
 
 func main() {
 	ctx := context.Background()
-	logger := log.Default()
-	logger.Println("Loading configuration...")
 	cfg, err := config.NewConfig(".env")
 	checkError(err)
-	logger.Println("Configuration loaded")
 
-	logger.Println("Connecting to database...")
+	common.SetupLogger(cfg.Env)
+	logger := common.Logger()
 	connStr := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
 		cfg.Database.User,
 		cfg.Database.Password,
@@ -32,11 +30,11 @@ func main() {
 	)
 	pool, err := pgxpool.Connect(ctx, connStr)
 	checkError(err)
-	logger.Println("Connected to database")
+	logger.Info("Connected to database")
 	defer func() {
-		logger.Println("Closing database connection...")
+		logger.Info("Closing database connection...")
 		pool.Close()
-		logger.Println("Database connection closed")
+		logger.Info("Database connection closed")
 	}()
 
 	querier := dbgen.New(pool)
@@ -49,10 +47,10 @@ func main() {
 	}
 	reconProcesserService := reconciliatonjob.NewProcesserService(querier, fileStorage)
 
-	logger.Println("Processing reconciliation job...")
+	logger.Info("Processing reconciliation job...")
 	err = reconProcesserService.Process(ctx)
 	checkError(err)
-	logger.Println("Reconciliation job processed")
+	logger.Info("Reconciliation job processed")
 }
 
 func checkError(err error) {
