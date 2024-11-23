@@ -54,3 +54,51 @@ If you need to rollback the database, you can use this command:
 ```shell
 make migrate-down
 ```
+
+### 3. Run API
+
+To run API Server
+
+```shell
+make run
+# or
+go run cmd/api/main.go
+```
+
+### 4. Run Reconcile Job
+
+To run reconcile processer job
+
+```shell
+make run-job
+#or
+go run cmd/reconcile-job/main.go
+```
+
+### 5. Create Docker Container for Deployment
+
+To create docker container for deployment API
+
+```shell
+make docker.api
+```
+
+To create docker container for deployment Reconcile Job
+
+```shell
+make docker.reconcile-job
+```
+
+To try running your docker container deployment API
+
+```shell
+docker run --rm --name recon-api -p 8080:8080 --env-file .env --platform=linux/amd64 delly/amartha-recon-api:demo-amd64
+```
+
+To try running your docker container deployment Reconcile Job
+
+```shell
+docker run --rm --name recon-job --env-file .env --platform=linux/amd64 delly/amartha-recon-job:demo-amd64
+```
+
+Since file storage implementation used in this project is using local storage, so to ensure that create new request Reconcile and Process Reconcile Job works, you need to implement contract `FileStorageRepository` with storage that can be accessed by the docker container, for example store it in Google Cloud Storage, or something like that.
