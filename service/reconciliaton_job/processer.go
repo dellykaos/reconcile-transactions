@@ -105,24 +105,50 @@ func (s *ProcesserService) processReconciliationJob(ctx context.Context, job *en
 		return err
 	}
 
-	systemTrx, err := s.convertSystemCSVFileToTransactions(job, systemTrxFile)
-	if err != nil {
+	systemTrxs := []*entity.Transaction{}
+	if err = s.readCSVFile(systemTrxFile, func(record []string) error {
+		trx, err := s.convertSystemTransactionRecordToTransaction(record)
+		if err != nil {
+			return err
+		}
+		notInRange := trx.Time.Before(job.StartDate) || trx.Time.After(job.EndDate)
+		if notInRange {
+			return nil
+		}
+		systemTrxs = append(systemTrxs, trx)
+		return nil
+	}); err != nil {
 		return err
 	}
 
 	bankTrxs := []*bankMappedTransactions{}
 	for bankName, file := range bankFiles {
-		trx, err := s.convertBankCSVFileToMappedTransactions(job, file)
-		if err != nil {
+		mapTrxs := map[string][]*entity.Transaction{}
+		if err = s.readCSVFile(file, func(record []string) error {
+			trx, err := s.convertBankTransactionRecordToTransaction(record)
+			if err != nil {
+				return err
+			}
+			notInRange := trx.Time.Before(job.StartDate) || trx.Time.After(job.EndDate)
+			if notInRange {
+				return nil
+			}
+			date := trx.Time.Format(time.DateOnly)
+			if _, ok := mapTrxs[date]; !ok {
+				mapTrxs[date] = []*entity.Transaction{}
+			}
+			mapTrxs[date] = append(mapTrxs[date], trx)
+			return nil
+		}); err != nil {
 			return err
 		}
 		bankTrxs = append(bankTrxs, &bankMappedTransactions{
 			bankName:     bankName,
-			transactions: trx,
+			transactions: mapTrxs,
 		})
 	}
 
-	result := s.processReconciliation(job, systemTrx, bankTrxs)
+	result := s.processReconciliation(job, systemTrxs, bankTrxs)
 	job.Result = result
 	job.Status = entity.ReconciliationJobStatusSuccess
 
@@ -192,72 +218,30 @@ func (s *ProcesserService) processReconciliation(job *entity.ReconciliationJob,
 	return result
 }
 
-func (s *ProcesserService) convertSystemCSVFileToTransactions(
-	job *entity.ReconciliationJob,
+func (s *ProcesserService) readCSVFile(
 	file *filestorage.File,
-) ([]*entity.Transaction, error) {
+	callback func([]string) error,
+) error {
 	if file.Buf == nil {
-		return nil, fmt.Errorf("file buffer of file %s is empty", file.Name)
+		return fmt.Errorf("file buffer of file %s is empty", file.Name)
 	}
 
 	csvReader := csv.NewReader(file.Buf)
-	result := []*entity.Transaction{}
 	for {
 		record, err := csvReader.Read()
 		if err != nil {
 			if err == io.EOF {
 				break
 			}
-			return nil, err
+			return err
 		}
 
-		trx, err := s.convertSystemTransactionRecordToTransaction(record)
-		if err != nil {
-			return nil, err
+		if err = callback(record); err != nil {
+			return err
 		}
-
-		notInRange := trx.Time.Before(job.StartDate) || trx.Time.After(job.EndDate)
-		if notInRange {
-			continue
-		}
-
-		result = append(result, trx)
 	}
 
-	return result, nil
-}
-
-func (s *ProcesserService) convertBankCSVFileToMappedTransactions(job *entity.ReconciliationJob,
-	file *filestorage.File) (map[string][]*entity.Transaction, error) {
-	csvReader := csv.NewReader(file.Buf)
-	result := map[string][]*entity.Transaction{}
-	for {
-		record, err := csvReader.Read()
-		if err != nil {
-			if err == io.EOF {
-				break
-			}
-			return nil, err
-		}
-
-		trx, err := s.convertBankTransactionRecordToTransaction(record)
-		if err != nil {
-			return nil, err
-		}
-
-		notInRange := trx.Time.Before(job.StartDate) || trx.Time.After(job.EndDate)
-		if notInRange {
-			continue
-		}
-
-		date := trx.Time.Format(time.DateOnly)
-		if _, ok := result[date]; !ok {
-			result[date] = []*entity.Transaction{}
-		}
-		result[date] = append(result[date], trx)
-	}
-
-	return result, nil
+	return nil
 }
 
 func (s *ProcesserService) convertSystemTransactionRecordToTransaction(record []string) (*entity.Transaction, error) {
