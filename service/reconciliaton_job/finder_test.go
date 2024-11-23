@@ -2,6 +2,7 @@ package reconciliatonjob_test
 
 import (
 	"context"
+	"database/sql"
 	"testing"
 	"time"
 
@@ -34,6 +35,7 @@ var (
 			Status: pgtype.Present,
 			Bytes:  []byte(`[{"bank_name": "BCA", "file_path": "path_to_file_bca"}]`),
 		},
+		ErrorInformation: sql.NullString{},
 		Result: pgtype.JSONB{
 			Status: pgtype.Present,
 			Bytes: []byte(`
@@ -79,6 +81,7 @@ var (
 				FilePath: "path_to_file_bca",
 			},
 		},
+		ErrorInformation: "",
 		Result: &entity.ReconciliationResult{
 			TotalTransactionProcessed: 10,
 			TotalTransactionMatched:   5,

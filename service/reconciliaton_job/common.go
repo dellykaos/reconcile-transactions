@@ -11,6 +11,7 @@ func convertToEntityReconciliationJob(rj dbgen.ReconciliationJob) *entity.Reconc
 		Status:                   entity.ReconciliationJobStatus(rj.Status),
 		SystemTransactionCsvPath: rj.SystemTransactionCsvPath,
 		DiscrepancyThreshold:     float32(rj.DiscrepancyThreshold),
+		ErrorInformation:         rj.ErrorInformation.String,
 		StartDate:                rj.StartDate,
 		EndDate:                  rj.EndDate,
 		CreatedAt:                rj.CreatedAt,
