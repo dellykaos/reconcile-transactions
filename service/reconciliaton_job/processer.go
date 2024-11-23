@@ -6,7 +6,6 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
-	"math"
 	"strconv"
 	"time"
 
@@ -132,14 +131,14 @@ func (s *ProcesserService) processReconciliationJob(ctx context.Context, job *en
 		return err
 	}
 
-	systemTrx, err := s.readCSVFile(job, systemTrxFile, systemTransaction)
+	systemTrx, err := s.convertSystemCSVFileToTransactions(job, systemTrxFile)
 	if err != nil {
 		return err
 	}
 
 	bankTrxs := []*bankMappedTransactions{}
 	for bankName, file := range bankFiles {
-		trx, err := s.readCSVFile(job, file, bankTransaction)
+		trx, err := s.convertBankCSVFileToMappedTransactions(job, file)
 		if err != nil {
 			return err
 		}
@@ -157,7 +156,7 @@ func (s *ProcesserService) processReconciliationJob(ctx context.Context, job *en
 }
 
 func (s *ProcesserService) processReconciliation(job *entity.ReconciliationJob,
-	systemTrx map[string][]*entity.Transaction, bankTrxs []*bankMappedTransactions) *entity.ReconciliationResult {
+	systemTrx []*entity.Transaction, bankTrxs []*bankMappedTransactions) *entity.ReconciliationResult {
 	result := &entity.ReconciliationResult{
 		TotalTransactionProcessed: 0,
 		TotalTransactionMatched:   0,
@@ -167,43 +166,51 @@ func (s *ProcesserService) processReconciliation(job *entity.ReconciliationJob,
 		MissingBankTransactions:   map[string][]entity.Transaction{},
 	}
 
-	for date, trxs := range systemTrx {
-		for _, trx := range trxs {
-			foundGroup := false
-			for _, bankTrx := range bankTrxs {
-				if bankTrxTrxs, ok := bankTrx.transactions[date]; ok {
-					foundGroup = true
-					found := false
-					bankTrxIdx := 0
-					var discrepancy float64
-					for idx, bankTrx := range bankTrxTrxs {
-						discrepancy = math.Abs(trx.Amount - bankTrx.Amount)
-						discrepancyThreshold := float64(job.DiscrepancyThreshold) * trx.Amount
-						minDiscrepancy := trx.Amount - discrepancyThreshold
-						maxDiscrepancy := trx.Amount + discrepancyThreshold
-						if discrepancy >= minDiscrepancy && discrepancy <= maxDiscrepancy {
-							result.TotalTransactionMatched++
-							bankTrxIdx = idx
-							found = true
-							break
-						}
-					}
-					if !found {
-						result.TotalDiscrepancyAmount += discrepancy
-						result.TotalTransactionUnmatched++
-						// add missing system transaction to result
-						result.MissingTransactions = append(result.MissingTransactions, *trx)
-					} else {
-						// remove matched bank transaction, so it won't be processed again
-						// and we can track missing bank transactions
-						bankTrx.transactions[date] = append(bankTrx.transactions[date][:bankTrxIdx],
-							bankTrx.transactions[date][bankTrxIdx+1:]...)
+	for _, trx := range systemTrx {
+		var found bool
+		var bankTrxIdx int
+		date := trx.Time.Format(time.DateOnly)
+		result.TotalTransactionProcessed++
+		for _, bankTrx := range bankTrxs {
+			if bankTrxTrxs, ok := bankTrx.transactions[date]; ok {
+				for idx, bankTrx := range bankTrxTrxs {
+					discrepancyThreshold := float64(job.DiscrepancyThreshold) * trx.Amount
+					minDiscrepancy := trx.Amount - discrepancyThreshold
+					maxDiscrepancy := trx.Amount + discrepancyThreshold
+					bankAmountInThreshold := bankTrx.Amount >= minDiscrepancy && bankTrx.Amount <= maxDiscrepancy
+					if bankAmountInThreshold {
+						bankTrxIdx = idx
+						found = true
+						break
 					}
 				}
+				if found {
+					result.TotalTransactionProcessed++
+					result.TotalTransactionMatched++
+					// remove matched bank transaction, so it won't be processed again
+					// and we can track missing bank transactions
+					bankTrx.transactions[date] = append(bankTrx.transactions[date][:bankTrxIdx],
+						bankTrx.transactions[date][bankTrxIdx+1:]...)
+					break
+				}
 			}
-			if !foundGroup {
-				// add missing system transaction to result
-				result.MissingTransactions = append(result.MissingTransactions, *trx)
+		}
+		if !found {
+			// add missing system transaction to result
+			result.MissingTransactions = append(result.MissingTransactions, *trx)
+			result.TotalDiscrepancyAmount += trx.Amount
+			result.TotalTransactionUnmatched++
+			continue
+		}
+	}
+
+	for _, bankTrx := range bankTrxs {
+		for _, trxs := range bankTrx.transactions {
+			for _, trx := range trxs {
+				result.MissingBankTransactions[bankTrx.bankName] = append(result.MissingBankTransactions[bankTrx.bankName], *trx)
+				result.TotalDiscrepancyAmount += trx.Amount
+				result.TotalTransactionUnmatched++
+				result.TotalTransactionProcessed++
 			}
 		}
 	}
@@ -211,8 +218,37 @@ func (s *ProcesserService) processReconciliation(job *entity.ReconciliationJob,
 	return result
 }
 
-func (s *ProcesserService) readCSVFile(job *entity.ReconciliationJob,
-	file *filestorage.File, fileType fileType) (map[string][]*entity.Transaction, error) {
+func (s *ProcesserService) convertSystemCSVFileToTransactions(job *entity.ReconciliationJob,
+	file *filestorage.File) ([]*entity.Transaction, error) {
+	csvReader := csv.NewReader(file.Buf)
+	result := []*entity.Transaction{}
+	for {
+		record, err := csvReader.Read()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+			return nil, err
+		}
+
+		trx, err := s.convertSystemTransactionRecordToTransaction(record)
+		if err != nil {
+			return nil, err
+		}
+
+		notInRange := trx.Time.Before(job.StartDate) || trx.Time.After(job.EndDate)
+		if notInRange {
+			continue
+		}
+
+		result = append(result, trx)
+	}
+
+	return result, nil
+}
+
+func (s *ProcesserService) convertBankCSVFileToMappedTransactions(job *entity.ReconciliationJob,
+	file *filestorage.File) (map[string][]*entity.Transaction, error) {
 	csvReader := csv.NewReader(file.Buf)
 	result := map[string][]*entity.Transaction{}
 	for {
@@ -224,12 +260,7 @@ func (s *ProcesserService) readCSVFile(job *entity.ReconciliationJob,
 			return nil, err
 		}
 
-		var trx *entity.Transaction
-		if fileType == systemTransaction {
-			trx, err = s.convertSystemTransactionRecordToTransaction(record)
-		} else {
-			trx, err = s.convertBankTransactionRecordToTransaction(record)
-		}
+		trx, err := s.convertBankTransactionRecordToTransaction(record)
 		if err != nil {
 			return nil, err
 		}
