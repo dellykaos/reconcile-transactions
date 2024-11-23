@@ -127,7 +127,7 @@ func (s *ProcesserService) processReconciliationJob(ctx context.Context, job *en
 		return errSaveProcessingJob
 	}
 
-	systemTrxFile, bankFiles, err := s.getCSVFiles(ctx, job)
+	systemTrxFile, bankFiles, err := s.getCSVFiles(job)
 	if err != nil {
 		return err
 	}
@@ -292,7 +292,7 @@ func (s *ProcesserService) convertBankTransactionRecordToTransaction(record []st
 	}, nil
 }
 
-func (s *ProcesserService) getCSVFiles(ctx context.Context, job *entity.ReconciliationJob) (systemTrxFile *filestorage.File, bankFiles map[string]*filestorage.File, err error) {
+func (s *ProcesserService) getCSVFiles(job *entity.ReconciliationJob) (systemTrxFile *filestorage.File, bankFiles map[string]*filestorage.File, err error) {
 	systemTrxFile, err = s.storage.Get(job.SystemTransactionCsvPath)
 	if err != nil {
 		return nil, nil, err
