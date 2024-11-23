@@ -283,6 +283,8 @@ Form Data:
 - bank_names (string) - can be multiple
 - bank_transaction_files (file) - can be multiple
 
+Sample CSV file can be found under directory `test/data`
+
 cURL example:
 
 ```shell
