@@ -192,8 +192,14 @@ func (s *ProcesserService) processReconciliation(job *entity.ReconciliationJob,
 	return result
 }
 
-func (s *ProcesserService) convertSystemCSVFileToTransactions(job *entity.ReconciliationJob,
-	file *filestorage.File) ([]*entity.Transaction, error) {
+func (s *ProcesserService) convertSystemCSVFileToTransactions(
+	job *entity.ReconciliationJob,
+	file *filestorage.File,
+) ([]*entity.Transaction, error) {
+	if file.Buf == nil {
+		return nil, fmt.Errorf("file buffer of file %s is empty", file.Name)
+	}
+
 	csvReader := csv.NewReader(file.Buf)
 	result := []*entity.Transaction{}
 	for {
