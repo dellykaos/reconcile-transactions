@@ -283,6 +283,9 @@ func (s *ProcesserService) convertBankTransactionRecordToTransaction(record []st
 		trxType = entity.TxTypeCredit
 	}
 	transactionTime, err := time.Parse(time.DateOnly, record[2])
+	if err != nil {
+		return nil, err
+	}
 
 	return &entity.Transaction{
 		ID:     trxID,
