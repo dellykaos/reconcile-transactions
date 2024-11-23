@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/delly/amartha/common"
 	"github.com/delly/amartha/entity"
 	filestorage "github.com/delly/amartha/repository/file_storage"
 	dbgen "github.com/delly/amartha/repository/postgresql"
@@ -106,8 +107,8 @@ func (s *ProcesserService) processReconciliationJob(ctx context.Context, job *en
 		return err
 	}
 
-	startDateTime := startOfDay(job.StartDate)
-	endDateTime := endOfDay(job.EndDate)
+	startDateTime := common.StartOfDay(job.StartDate)
+	endDateTime := common.EndOfDay(job.EndDate)
 	systemTrxs := []*entity.Transaction{}
 	if err = s.readCSVFile(systemTrxFile, func(record []string) error {
 		trx, err := s.convertSystemTransactionRecordToTransaction(record)
@@ -324,12 +325,4 @@ func (s *ProcesserService) getPendingReconciliationJobs(ctx context.Context) ([]
 	}
 
 	return result, nil
-}
-
-func startOfDay(t time.Time) time.Time {
-	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
-}
-
-func endOfDay(t time.Time) time.Time {
-	return time.Date(t.Year(), t.Month(), t.Day(), 23, 59, 59, 0, t.Location())
 }
