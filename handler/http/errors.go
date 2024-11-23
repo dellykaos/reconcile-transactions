@@ -1,6 +1,7 @@
 package http
 
 import (
+	"errors"
 	"fmt"
 )
 
@@ -21,4 +22,8 @@ var (
 	ErrFileSizeExceedLimit = func(fname, limit string) error {
 		return fmt.Errorf("file size %s more than %s", fname, limit)
 	}
+	// ErrBankTrxFileEmpty is an error when bank transaction files is empty
+	ErrBankTrxFileEmpty = errors.New("bank transaction files is required, at least provide one")
+	// ErrBankFileAndNameLengthNotMatch is an error when bank names and bank transaction files length not match
+	ErrBankFileAndNameLengthNotMatch = errors.New("bank names and bank transaction files length must be same")
 )

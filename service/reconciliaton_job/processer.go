@@ -225,7 +225,7 @@ func (s *ProcesserService) readCSVFile(
 	callback func([]string) error,
 ) error {
 	if file.Buf == nil {
-		return fmt.Errorf("file buffer of file %s is empty", file.Name)
+		return errEmptyBuffer(file.Name)
 	}
 
 	csvReader := csv.NewReader(file.Buf)
@@ -254,7 +254,7 @@ func (s *ProcesserService) convertSystemTransactionRecordToTransaction(record []
 	}
 	trxType := entity.TransactionType(record[2])
 	if trxType != entity.TxTypeCredit && trxType != entity.TxTypeDebit {
-		return nil, fmt.Errorf("invalid transaction type: %s, trx id: %s", trxType, trxID)
+		return nil, errInvalidTrxType(trxType, trxID)
 	}
 	transactionTime, err := time.Parse(time.RFC3339, record[3])
 	if err != nil {

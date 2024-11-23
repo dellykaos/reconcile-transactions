@@ -184,10 +184,10 @@ func (h *ReconciliationJobHandler) buildBankTrxFiles(form *multipart.Form) ([]*r
 	bankNames := form.Value["bank_names"]
 	bankTrxFiles := form.File["bank_transaction_files"]
 	if len(bankTrxFiles) == 0 {
-		return nil, errors.New("bank transaction files is required, at least provide one")
+		return nil, ErrBankTrxFileEmpty
 	}
 	if len(bankNames) != len(bankTrxFiles) {
-		return nil, errors.New("bank names and bank transaction files length must be same")
+		return nil, ErrBankFileAndNameLengthNotMatch
 	}
 
 	result := []*reconciliatonjob.BankTransactionFile{}
