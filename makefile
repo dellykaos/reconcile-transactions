@@ -43,6 +43,16 @@ build:
 build-reconcile-job:
 	go build -o output/reconcile-job cmd/reconcile-job/main.go
 
+.PHONY: compile.server
+compile.server:
+	GO111MODULE=on CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags '-extldflags "-static"' -o deploy/api/api cmd/api/main.go
+	docker buildx build -f dockerfile/api/Dockerfile --platform=linux/amd64 -t delly/amartha-recon-api:demo-amd64 .
+
+.PHONY: compile.reconcile-job
+compile.reconcile-job:
+	GO111MODULE=on CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -ldflags '-extldflags "-static"' -o deploy/reconcile-job/reconcile-job cmd/reconcile-job/main.go
+	docker buildx build -f dockerfile/reconcile-job/Dockerfile --platform=linux/amd64 -t delly/amartha-recon-job:demo-amd64 .
+
 .PHONY: test
 test:
 	go test -v ./...

@@ -1,4 +1,5 @@
-.env
+.env*
 
+/deploy
 /output
 /temp_storage
