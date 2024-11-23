@@ -120,16 +120,16 @@ func (m *MockFileRepository) EXPECT() *MockFileRepositoryMockRecorder {
 }
 
 // Store mocks base method.
-func (m *MockFileRepository) Store(file *filestorage.File) (string, error) {
+func (m *MockFileRepository) Store(ctx context.Context, file *filestorage.File) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Store", file)
+	ret := m.ctrl.Call(m, "Store", ctx, file)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Store indicates an expected call of Store.
-func (mr *MockFileRepositoryMockRecorder) Store(file any) *gomock.Call {
+func (mr *MockFileRepositoryMockRecorder) Store(ctx, file any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Store", reflect.TypeOf((*MockFileRepository)(nil).Store), file)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Store", reflect.TypeOf((*MockFileRepository)(nil).Store), ctx, file)
 }

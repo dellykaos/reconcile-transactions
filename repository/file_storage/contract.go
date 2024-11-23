@@ -1,7 +1,9 @@
 package filestorage
 
+import "context"
+
 // FileStorageRepository is contract to store and get file
 type FileStorageRepository interface {
-	Store(file *File) (string, error)
-	Get(filePath string) (*File, error)
+	Get(ctx context.Context, filePath string) (*File, error)
+	Store(ctx context.Context, file *File) (string, error)
 }

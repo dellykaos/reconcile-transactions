@@ -97,8 +97,8 @@ func (s *ReconciliationJobCreatorTestSuite) TestCreate() {
 	}
 
 	s.Run("success", func() {
-		s.mockFileRepo.EXPECT().Store(fsSystemFile).Return(systemTrxPath, nil)
-		s.mockFileRepo.EXPECT().Store(fsBankFile).Return(bcaTrxPath, nil)
+		s.mockFileRepo.EXPECT().Store(ctx, fsSystemFile).Return(systemTrxPath, nil)
+		s.mockFileRepo.EXPECT().Store(ctx, fsBankFile).Return(bcaTrxPath, nil)
 		s.mockRepo.EXPECT().CreateReconciliationJob(ctx, dbParams).Return(dbResult, nil)
 
 		res, err := s.svc.Create(ctx, params)
@@ -108,7 +108,7 @@ func (s *ReconciliationJobCreatorTestSuite) TestCreate() {
 	})
 
 	s.Run("error store system transaction csv", func() {
-		s.mockFileRepo.EXPECT().Store(fsSystemFile).Return("", assert.AnError)
+		s.mockFileRepo.EXPECT().Store(ctx, fsSystemFile).Return("", assert.AnError)
 
 		res, err := s.svc.Create(ctx, params)
 
@@ -117,8 +117,8 @@ func (s *ReconciliationJobCreatorTestSuite) TestCreate() {
 	})
 
 	s.Run("error store bank transaction csv", func() {
-		s.mockFileRepo.EXPECT().Store(fsSystemFile).Return(systemTrxPath, nil)
-		s.mockFileRepo.EXPECT().Store(fsBankFile).Return("", assert.AnError)
+		s.mockFileRepo.EXPECT().Store(ctx, fsSystemFile).Return(systemTrxPath, nil)
+		s.mockFileRepo.EXPECT().Store(ctx, fsBankFile).Return("", assert.AnError)
 
 		res, err := s.svc.Create(ctx, params)
 
@@ -127,8 +127,8 @@ func (s *ReconciliationJobCreatorTestSuite) TestCreate() {
 	})
 
 	s.Run("error create recon", func() {
-		s.mockFileRepo.EXPECT().Store(fsSystemFile).Return(systemTrxPath, nil)
-		s.mockFileRepo.EXPECT().Store(fsBankFile).Return(bcaTrxPath, nil)
+		s.mockFileRepo.EXPECT().Store(ctx, fsSystemFile).Return(systemTrxPath, nil)
+		s.mockFileRepo.EXPECT().Store(ctx, fsBankFile).Return(bcaTrxPath, nil)
 		s.mockRepo.EXPECT().CreateReconciliationJob(ctx, dbParams).Return(dbgen.ReconciliationJob{}, assert.AnError)
 
 		res, err := s.svc.Create(ctx, params)

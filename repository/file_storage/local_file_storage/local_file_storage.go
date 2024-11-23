@@ -2,6 +2,7 @@ package localfilestorage
 
 import (
 	"bytes"
+	"context"
 	"crypto/rand"
 	"fmt"
 	"os"
@@ -26,7 +27,7 @@ func NewStorage(storagePath string) *Storage {
 }
 
 // Store is a function to store file to local storage
-func (lfs *Storage) Store(file *filestorage.File) (string, error) {
+func (lfs *Storage) Store(_ context.Context, file *filestorage.File) (string, error) {
 	uniqueFileDirectory := lfs.generateUniqueFileDirectory()
 	if err := os.MkdirAll(uniqueFileDirectory, os.ModePerm); err != nil {
 		return "", fmt.Errorf("failed to create storage directory: %w", err)
@@ -47,7 +48,7 @@ func (lfs *Storage) Store(file *filestorage.File) (string, error) {
 }
 
 // Get is a function to get file from local storage
-func (lfs *Storage) Get(filePath string) (*filestorage.File, error) {
+func (lfs *Storage) Get(_ context.Context, filePath string) (*filestorage.File, error) {
 	file, err := os.Open(filePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to open file: %w", err)

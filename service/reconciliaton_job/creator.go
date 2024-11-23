@@ -22,7 +22,7 @@ type CreatorRepository interface {
 
 // FileRepository is a contract to for file repository
 type FileRepository interface {
-	Store(file *filestorage.File) (string, error)
+	Store(ctx context.Context, file *filestorage.File) (string, error)
 }
 
 // CreatorService is a service to create reconciliation job
@@ -66,7 +66,7 @@ func NewCreatorService(repo CreatorRepository,
 
 // Create create reconciliation job
 func (s *CreatorService) Create(ctx context.Context, params *CreateParams) (*entity.ReconciliationJob, error) {
-	path, err := s.fileRepo.Store(&filestorage.File{
+	path, err := s.fileRepo.Store(ctx, &filestorage.File{
 		Name: params.SystemTransactionCsv.Name,
 		Buf:  params.SystemTransactionCsv.Buf,
 	})
@@ -76,7 +76,7 @@ func (s *CreatorService) Create(ctx context.Context, params *CreateParams) (*ent
 	params.SystemTransactionCsv.Path = path
 
 	for _, v := range params.BankTransactionCsvs {
-		path, err := s.fileRepo.Store(&filestorage.File{
+		path, err := s.fileRepo.Store(ctx, &filestorage.File{
 			Name: v.File.Name,
 			Buf:  v.File.Buf,
 		})

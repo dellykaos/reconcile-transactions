@@ -42,7 +42,7 @@ type ProcesserRepository interface {
 
 // StorageGetter is a dependency of repository that needed to get file from storage
 type StorageGetter interface {
-	Get(filePath string) (*filestorage.File, error)
+	Get(ctx context.Context, filePath string) (*filestorage.File, error)
 }
 
 // ProcesserService is an implementation of Processer to process
@@ -127,7 +127,7 @@ func (s *ProcesserService) processReconciliationJob(ctx context.Context, job *en
 		return errSaveProcessingJob
 	}
 
-	systemTrxFile, bankFiles, err := s.getCSVFiles(job)
+	systemTrxFile, bankFiles, err := s.getCSVFiles(ctx, job)
 	if err != nil {
 		return err
 	}
@@ -292,15 +292,15 @@ func (s *ProcesserService) convertBankTransactionRecordToTransaction(record []st
 	}, nil
 }
 
-func (s *ProcesserService) getCSVFiles(job *entity.ReconciliationJob) (systemTrxFile *filestorage.File, bankFiles map[string]*filestorage.File, err error) {
-	systemTrxFile, err = s.storage.Get(job.SystemTransactionCsvPath)
+func (s *ProcesserService) getCSVFiles(ctx context.Context, job *entity.ReconciliationJob) (systemTrxFile *filestorage.File, bankFiles map[string]*filestorage.File, err error) {
+	systemTrxFile, err = s.storage.Get(ctx, job.SystemTransactionCsvPath)
 	if err != nil {
 		return nil, nil, err
 	}
 
 	bankFiles = map[string]*filestorage.File{}
 	for _, bankFile := range job.BankTransactionCsvPaths {
-		file, err := s.storage.Get(bankFile.FilePath)
+		file, err := s.storage.Get(ctx, bankFile.FilePath)
 		if err != nil {
 			return nil, nil, err
 		}
