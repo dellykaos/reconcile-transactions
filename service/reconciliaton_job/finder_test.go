@@ -18,11 +18,13 @@ import (
 )
 
 var (
-	id         = int64(1)
-	lastMonth  = time.Now().AddDate(0, -1, 0)
-	yesterday  = time.Now().AddDate(0, 0, -1)
-	now        = time.Now()
-	dbReconJob = dbgen.ReconciliationJob{
+	id          = int64(1)
+	lastMonth   = time.Now().AddDate(0, -1, 0)
+	lastWeek    = time.Now().AddDate(0, 0, -7)
+	yesterday   = time.Now().AddDate(0, 0, -1)
+	now         = time.Now()
+	strLastWeek = lastWeek.Format(time.RFC3339)
+	dbReconJob  = dbgen.ReconciliationJob{
 		ID:                       id,
 		Status:                   "SUCCESS",
 		SystemTransactionCsvPath: "path_to_file",

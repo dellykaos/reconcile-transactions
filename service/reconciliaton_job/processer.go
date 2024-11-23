@@ -6,6 +6,7 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
+	"slices"
 	"strconv"
 	"time"
 
@@ -105,13 +106,15 @@ func (s *ProcesserService) processReconciliationJob(ctx context.Context, job *en
 		return err
 	}
 
+	startDateTime := startOfDay(job.StartDate)
+	endDateTime := endOfDay(job.EndDate)
 	systemTrxs := []*entity.Transaction{}
 	if err = s.readCSVFile(systemTrxFile, func(record []string) error {
 		trx, err := s.convertSystemTransactionRecordToTransaction(record)
 		if err != nil {
 			return err
 		}
-		notInRange := trx.Time.Before(job.StartDate) || trx.Time.After(job.EndDate)
+		notInRange := trx.Time.Before(startDateTime) || trx.Time.After(endDateTime)
 		if notInRange {
 			return nil
 		}
@@ -129,7 +132,7 @@ func (s *ProcesserService) processReconciliationJob(ctx context.Context, job *en
 			if err != nil {
 				return err
 			}
-			notInRange := trx.Time.Before(job.StartDate) || trx.Time.After(job.EndDate)
+			notInRange := trx.Time.Before(startDateTime) || trx.Time.After(endDateTime)
 			if notInRange {
 				return nil
 			}
@@ -156,7 +159,9 @@ func (s *ProcesserService) processReconciliationJob(ctx context.Context, job *en
 }
 
 func (s *ProcesserService) processReconciliation(job *entity.ReconciliationJob,
-	systemTrx []*entity.Transaction, bankTrxs []*bankMappedTransactions) *entity.ReconciliationResult {
+	systemTrxs []*entity.Transaction,
+	bankTrxs []*bankMappedTransactions,
+) *entity.ReconciliationResult {
 	result := &entity.ReconciliationResult{
 		TotalTransactionProcessed: 0,
 		TotalTransactionMatched:   0,
@@ -166,7 +171,7 @@ func (s *ProcesserService) processReconciliation(job *entity.ReconciliationJob,
 		MissingBankTransactions:   map[string][]entity.Transaction{},
 	}
 
-	for _, trx := range systemTrx {
+	for _, trx := range systemTrxs {
 		var found bool
 		var bankTrxIdx int
 		date := trx.Time.Format(time.DateOnly)
@@ -185,12 +190,10 @@ func (s *ProcesserService) processReconciliation(job *entity.ReconciliationJob,
 					}
 				}
 				if found {
-					result.TotalTransactionProcessed++
 					result.TotalTransactionMatched++
 					// remove matched bank transaction, so it won't be processed again
 					// and we can track missing bank transactions
-					bankTrx.transactions[date] = append(bankTrx.transactions[date][:bankTrxIdx],
-						bankTrx.transactions[date][bankTrxIdx+1:]...)
+					bankTrx.transactions[date] = slices.Delete(bankTrx.transactions[date], bankTrxIdx, bankTrxIdx+1)
 					break
 				}
 			}
@@ -209,8 +212,6 @@ func (s *ProcesserService) processReconciliation(job *entity.ReconciliationJob,
 			for _, trx := range trxs {
 				result.MissingBankTransactions[bankTrx.bankName] = append(result.MissingBankTransactions[bankTrx.bankName], *trx)
 				result.TotalDiscrepancyAmount += trx.Amount
-				result.TotalTransactionUnmatched++
-				result.TotalTransactionProcessed++
 			}
 		}
 	}
@@ -251,6 +252,9 @@ func (s *ProcesserService) convertSystemTransactionRecordToTransaction(record []
 		return nil, err
 	}
 	trxType := entity.TransactionType(record[2])
+	if trxType != entity.TxTypeCredit && trxType != entity.TxTypeDebit {
+		return nil, fmt.Errorf("invalid transaction type: %s, trx id: %s", trxType, trxID)
+	}
 	transactionTime, err := time.Parse(time.RFC3339, record[3])
 	if err != nil {
 		return nil, err
@@ -320,4 +324,12 @@ func (s *ProcesserService) getPendingReconciliationJobs(ctx context.Context) ([]
 	}
 
 	return result, nil
+}
+
+func startOfDay(t time.Time) time.Time {
+	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
+}
+
+func endOfDay(t time.Time) time.Time {
+	return time.Date(t.Year(), t.Month(), t.Day(), 23, 59, 59, 0, t.Location())
 }
