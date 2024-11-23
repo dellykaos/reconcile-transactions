@@ -7,6 +7,7 @@ package dbgen
 
 import (
 	"context"
+	"database/sql"
 	"time"
 
 	"github.com/jackc/pgtype"
@@ -25,7 +26,7 @@ func (q *Queries) CountReconciliationJobs(ctx context.Context) (int64, error) {
 
 const createReconciliationJob = `-- name: CreateReconciliationJob :one
 INSERT INTO reconciliation_jobs (status, system_transaction_csv_path, bank_transaction_csv_paths, discrepancy_threshold, start_date, end_date) VALUES ('PENDING', $1, $2, $3, $4, $5)
-RETURNING id, status, system_transaction_csv_path, bank_transaction_csv_paths, discrepancy_threshold, start_date, end_date, result, created_at, updated_at
+RETURNING id, status, system_transaction_csv_path, bank_transaction_csv_paths, discrepancy_threshold, start_date, end_date, result, created_at, updated_at, error_information
 `
 
 type CreateReconciliationJobParams struct {
@@ -56,12 +57,41 @@ func (q *Queries) CreateReconciliationJob(ctx context.Context, arg CreateReconci
 		&i.Result,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ErrorInformation,
+	)
+	return i, err
+}
+
+const failedReconciliationJob = `-- name: FailedReconciliationJob :one
+UPDATE reconciliation_jobs SET status = 'FAILED', error_information = $2 WHERE id = $1 RETURNING id, status, system_transaction_csv_path, bank_transaction_csv_paths, discrepancy_threshold, start_date, end_date, result, created_at, updated_at, error_information
+`
+
+type FailedReconciliationJobParams struct {
+	ID               int64          `db:"id"`
+	ErrorInformation sql.NullString `db:"error_information"`
+}
+
+func (q *Queries) FailedReconciliationJob(ctx context.Context, arg FailedReconciliationJobParams) (ReconciliationJob, error) {
+	row := q.db.QueryRow(ctx, failedReconciliationJob, arg.ID, arg.ErrorInformation)
+	var i ReconciliationJob
+	err := row.Scan(
+		&i.ID,
+		&i.Status,
+		&i.SystemTransactionCsvPath,
+		&i.BankTransactionCsvPaths,
+		&i.DiscrepancyThreshold,
+		&i.StartDate,
+		&i.EndDate,
+		&i.Result,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.ErrorInformation,
 	)
 	return i, err
 }
 
 const finishReconciliationJob = `-- name: FinishReconciliationJob :one
-UPDATE reconciliation_jobs SET status = 'SUCCESS', result = $2 WHERE id = $1 RETURNING id, status, system_transaction_csv_path, bank_transaction_csv_paths, discrepancy_threshold, start_date, end_date, result, created_at, updated_at
+UPDATE reconciliation_jobs SET status = 'SUCCESS', result = $2 WHERE id = $1 RETURNING id, status, system_transaction_csv_path, bank_transaction_csv_paths, discrepancy_threshold, start_date, end_date, result, created_at, updated_at, error_information
 `
 
 type FinishReconciliationJobParams struct {
@@ -83,12 +113,13 @@ func (q *Queries) FinishReconciliationJob(ctx context.Context, arg FinishReconci
 		&i.Result,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ErrorInformation,
 	)
 	return i, err
 }
 
 const getReconciliationJobById = `-- name: GetReconciliationJobById :one
-SELECT id, status, system_transaction_csv_path, bank_transaction_csv_paths, discrepancy_threshold, start_date, end_date, result, created_at, updated_at FROM reconciliation_jobs WHERE id = $1
+SELECT id, status, system_transaction_csv_path, bank_transaction_csv_paths, discrepancy_threshold, start_date, end_date, result, created_at, updated_at, error_information FROM reconciliation_jobs WHERE id = $1
 `
 
 func (q *Queries) GetReconciliationJobById(ctx context.Context, id int64) (ReconciliationJob, error) {
@@ -105,12 +136,13 @@ func (q *Queries) GetReconciliationJobById(ctx context.Context, id int64) (Recon
 		&i.Result,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ErrorInformation,
 	)
 	return i, err
 }
 
 const listPendingReconciliationJobs = `-- name: ListPendingReconciliationJobs :many
-SELECT id, status, system_transaction_csv_path, bank_transaction_csv_paths, discrepancy_threshold, start_date, end_date, result, created_at, updated_at FROM reconciliation_jobs
+SELECT id, status, system_transaction_csv_path, bank_transaction_csv_paths, discrepancy_threshold, start_date, end_date, result, created_at, updated_at, error_information FROM reconciliation_jobs
 WHERE status = 'PENDING'
 ORDER BY created_at DESC
 `
@@ -135,6 +167,7 @@ func (q *Queries) ListPendingReconciliationJobs(ctx context.Context) ([]Reconcil
 			&i.Result,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.ErrorInformation,
 		); err != nil {
 			return nil, err
 		}
@@ -147,7 +180,7 @@ func (q *Queries) ListPendingReconciliationJobs(ctx context.Context) ([]Reconcil
 }
 
 const listReconciliationJobs = `-- name: ListReconciliationJobs :many
-SELECT id, status, system_transaction_csv_path, bank_transaction_csv_paths, discrepancy_threshold, start_date, end_date, result, created_at, updated_at FROM reconciliation_jobs
+SELECT id, status, system_transaction_csv_path, bank_transaction_csv_paths, discrepancy_threshold, start_date, end_date, result, created_at, updated_at, error_information FROM reconciliation_jobs
 ORDER BY id DESC
 LIMIT $1 OFFSET $2
 `
@@ -177,6 +210,7 @@ func (q *Queries) ListReconciliationJobs(ctx context.Context, arg ListReconcilia
 			&i.Result,
 			&i.CreatedAt,
 			&i.UpdatedAt,
+			&i.ErrorInformation,
 		); err != nil {
 			return nil, err
 		}
@@ -189,7 +223,7 @@ func (q *Queries) ListReconciliationJobs(ctx context.Context, arg ListReconcilia
 }
 
 const updateReconciliationJobStatus = `-- name: UpdateReconciliationJobStatus :one
-UPDATE reconciliation_jobs SET status = $2 WHERE id = $1 RETURNING id, status, system_transaction_csv_path, bank_transaction_csv_paths, discrepancy_threshold, start_date, end_date, result, created_at, updated_at
+UPDATE reconciliation_jobs SET status = $2 WHERE id = $1 RETURNING id, status, system_transaction_csv_path, bank_transaction_csv_paths, discrepancy_threshold, start_date, end_date, result, created_at, updated_at, error_information
 `
 
 type UpdateReconciliationJobStatusParams struct {
@@ -211,6 +245,7 @@ func (q *Queries) UpdateReconciliationJobStatus(ctx context.Context, arg UpdateR
 		&i.Result,
 		&i.CreatedAt,
 		&i.UpdatedAt,
+		&i.ErrorInformation,
 	)
 	return i, err
 }

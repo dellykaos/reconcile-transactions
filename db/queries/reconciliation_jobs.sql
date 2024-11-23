@@ -21,5 +21,8 @@ RETURNING *;
 -- name: UpdateReconciliationJobStatus :one
 UPDATE reconciliation_jobs SET status = $2 WHERE id = $1 RETURNING *;
 
+-- name: FailedReconciliationJob :one
+UPDATE reconciliation_jobs SET status = 'FAILED', error_information = $2 WHERE id = $1 RETURNING *;
+
 -- name: FinishReconciliationJob :one
 UPDATE reconciliation_jobs SET status = 'SUCCESS', result = $2 WHERE id = $1 RETURNING *;

@@ -11,6 +11,7 @@ import (
 type Querier interface {
 	CountReconciliationJobs(ctx context.Context) (int64, error)
 	CreateReconciliationJob(ctx context.Context, arg CreateReconciliationJobParams) (ReconciliationJob, error)
+	FailedReconciliationJob(ctx context.Context, arg FailedReconciliationJobParams) (ReconciliationJob, error)
 	FinishReconciliationJob(ctx context.Context, arg FinishReconciliationJobParams) (ReconciliationJob, error)
 	GetReconciliationJobById(ctx context.Context, id int64) (ReconciliationJob, error)
 	ListPendingReconciliationJobs(ctx context.Context) ([]ReconciliationJob, error)

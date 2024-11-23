@@ -41,6 +41,7 @@ type ReconciliationJob struct {
 	SystemTransactionCsvPath string                  `json:"system_transaction_csv_path"`
 	BankTransactionCsvPaths  []BankTransactionCsv    `json:"bank_transaction_csv_paths"`
 	DiscrepancyThreshold     float32                 `json:"discrepancy_threshold"`
+	ErrorInformation         string                  `json:"error_information"`
 	Result                   *ReconciliationResult   `json:"result"`
 	StartDate                time.Time               `json:"start_date"`
 	EndDate                  time.Time               `json:"end_date"`
