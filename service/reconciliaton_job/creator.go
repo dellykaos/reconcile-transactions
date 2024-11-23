@@ -5,9 +5,11 @@ import (
 	"context"
 	"time"
 
+	"github.com/delly/amartha/common/logger"
 	"github.com/delly/amartha/entity"
 	filestorage "github.com/delly/amartha/repository/file_storage"
 	dbgen "github.com/delly/amartha/repository/postgresql"
+	"go.uber.org/zap"
 )
 
 // Creator is a contract to create reconciliation job
@@ -29,6 +31,7 @@ type FileStorer interface {
 type CreatorService struct {
 	repo     CreatorRepository
 	fileRepo FileStorer
+	log      *zap.Logger
 }
 
 // File is a struct to hold metadata of csv file
@@ -61,16 +64,19 @@ func NewCreatorService(repo CreatorRepository,
 	return &CreatorService{
 		repo:     repo,
 		fileRepo: fileRepo,
+		log:      zap.L().With(zap.String("service", "reconciliation_job.creator")),
 	}
 }
 
 // Create create reconciliation job
 func (s *CreatorService) Create(ctx context.Context, params *CreateParams) (*entity.ReconciliationJob, error) {
+	log := logger.WithMethod(s.log, "Create")
 	path, err := s.fileRepo.Store(ctx, &filestorage.File{
 		Name: params.SystemTransactionCsv.Name,
 		Buf:  params.SystemTransactionCsv.Buf,
 	})
 	if err != nil {
+		log.Error("failed to store system transaction csv", zap.Error(err))
 		return nil, err
 	}
 	params.SystemTransactionCsv.Path = path
@@ -81,6 +87,7 @@ func (s *CreatorService) Create(ctx context.Context, params *CreateParams) (*ent
 			Buf:  v.File.Buf,
 		})
 		if err != nil {
+			log.Error("failed to store bank transaction csv", zap.Error(err))
 			return nil, err
 		}
 		v.File.Path = path
@@ -88,6 +95,7 @@ func (s *CreatorService) Create(ctx context.Context, params *CreateParams) (*ent
 
 	rj, err := s.repo.CreateReconciliationJob(ctx, params.convertParamsToDB())
 	if err != nil {
+		log.Error("failed to create reconciliation job", zap.Error(err))
 		return nil, err
 	}
 

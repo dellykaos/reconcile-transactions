@@ -5,13 +5,14 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/delly/amartha/common"
+	"github.com/delly/amartha/common/logger"
 	"github.com/delly/amartha/config"
 	filestorage "github.com/delly/amartha/repository/file_storage"
 	localfilestorage "github.com/delly/amartha/repository/file_storage/local_file_storage"
 	dbgen "github.com/delly/amartha/repository/postgresql"
 	reconciliatonjob "github.com/delly/amartha/service/reconciliaton_job"
 	"github.com/jackc/pgx/v4/pgxpool"
+	"go.uber.org/zap"
 )
 
 func main() {
@@ -19,8 +20,8 @@ func main() {
 	cfg, err := config.NewConfig(".env")
 	checkError(err)
 
-	common.SetupLogger(cfg.Env)
-	logger := common.Logger()
+	zap.ReplaceGlobals(logger.New(cfg.Env))
+	logger := zap.L()
 	connStr := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
 		cfg.Database.User,
 		cfg.Database.Password,

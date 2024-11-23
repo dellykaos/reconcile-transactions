@@ -2,7 +2,6 @@ package http
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -74,14 +73,6 @@ func getPagination(r *http.Request) pagination {
 		Limit:  int32(limit),
 		Offset: int32(offset),
 	}
-}
-
-func logInfoF(logger *log.Logger, format string, v ...interface{}) {
-	logger.Printf("[INFO] "+format, v...)
-}
-
-func logErrorF(logger *log.Logger, format string, v ...interface{}) {
-	logger.Printf("[ERROR] "+format, v...)
 }
 
 func parseDate(dateStr string) time.Time {

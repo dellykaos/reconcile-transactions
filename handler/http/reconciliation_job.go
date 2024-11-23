@@ -4,16 +4,16 @@ import (
 	"bytes"
 	"errors"
 	"io"
-	"log"
 	"mime/multipart"
 	"net/http"
-	"os"
 	"strconv"
 
+	"github.com/delly/amartha/common/logger"
 	"github.com/delly/amartha/entity"
 	reconciliatonjob "github.com/delly/amartha/service/reconciliaton_job"
 	"github.com/h2non/filetype"
 	"github.com/julienschmidt/httprouter"
+	"go.uber.org/zap"
 )
 
 const (
@@ -25,7 +25,7 @@ const (
 type ReconciliationJobHandler struct {
 	finderService  reconciliatonjob.Finder
 	creatorService reconciliatonjob.Creator
-	logger         *log.Logger
+	log            *zap.Logger
 }
 
 // NewReconciliationJobHandler create new reconciliation job handler, it used to create new reconciliation job, get reconciliation job by id, and get all reconciliation job
@@ -34,7 +34,7 @@ func NewReconciliationJobHandler(finderService reconciliatonjob.Finder,
 	return &ReconciliationJobHandler{
 		finderService:  finderService,
 		creatorService: creatorService,
-		logger:         log.New(os.Stdout, "[ReconciliationJobHandler] ", log.LstdFlags),
+		log:            zap.L().With(zap.String("handler", "reconciliation_job")),
 	}
 }
 
@@ -47,21 +47,22 @@ func (h *ReconciliationJobHandler) Register(router *httprouter.Router) {
 
 // GetReconciliationJobByID get reconciliation job by id
 func (h *ReconciliationJobHandler) GetReconciliationJobByID(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	log := logger.WithMethod(h.log, "GetReconciliationJobByID")
 	id, err := strconv.ParseInt(p.ByName("id"), 10, 64)
 	if err != nil {
-		logErrorF(h.logger, "invalid id: %s", p.ByName("id"))
+		log.Error("invalid id", zap.String("id", p.ByName("id")), zap.Error(err))
 		writeBadRequest(w, "invalid id")
 		return
 	}
 
 	rj, err := h.finderService.FindByID(r.Context(), id)
 	if err != nil {
-		logErrorF(h.logger, "error find by id: %v", err)
+		log.Error("failed to get reconciliation job by id", zap.Error(err), zap.Int64("id", id))
 		writeInternalServerError(w)
 		return
 	}
 	if rj == nil {
-		logInfoF(h.logger, "reconciliation job %d not found", id)
+		log.Error("reconciliation job not found", zap.Int64("id", id))
 		writeNotFound(w, "reconciliation job not found")
 		return
 	}
@@ -71,11 +72,11 @@ func (h *ReconciliationJobHandler) GetReconciliationJobByID(w http.ResponseWrite
 
 // GetAllReconciliationJob get all reconciliation job
 func (h *ReconciliationJobHandler) GetAllReconciliationJob(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	log := logger.WithMethod(h.log, "GetAllReconciliationJob")
 	pagination := getPagination(r)
-
 	total, err := h.finderService.Count(r.Context())
 	if err != nil {
-		h.logger.Printf("error count: %v", err)
+		log.Error("failed to count reconciliation job", zap.Error(err))
 		writeInternalServerError(w)
 		return
 	}
@@ -87,7 +88,7 @@ func (h *ReconciliationJobHandler) GetAllReconciliationJob(w http.ResponseWriter
 
 	rjs, err := h.finderService.FindAll(r.Context(), pagination.Limit, pagination.Offset)
 	if err != nil {
-		h.logger.Printf("error find all: %v", err)
+		log.Error("failed to list reconciliation jobs", zap.Error(err))
 		writeInternalServerError(w)
 		return
 	}
@@ -97,16 +98,17 @@ func (h *ReconciliationJobHandler) GetAllReconciliationJob(w http.ResponseWriter
 
 // CreateReconciliationJob create new reconciliation job
 func (h *ReconciliationJobHandler) CreateReconciliationJob(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
+	log := logger.WithMethod(h.log, "CreateReconciliationJob")
 	params, err := h.parseCreateReconciliationJobParams(r)
 	if err != nil {
-		logErrorF(h.logger, "error parse create reconciliation job params: %v", err)
+		log.Error("failed to parse create reconciliation job params", zap.Error(err))
 		writeBadRequest(w, err.Error())
 		return
 	}
 
 	rj, err := h.creatorService.Create(r.Context(), params)
 	if err != nil {
-		logErrorF(h.logger, "error create reconciliation job: %v", err)
+		log.Error("failed to create reconciliation job", zap.Error(err))
 		writeInternalServerError(w)
 		return
 	}

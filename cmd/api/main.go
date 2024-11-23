@@ -8,7 +8,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/delly/amartha/common"
+	"github.com/delly/amartha/common/logger"
 	"github.com/delly/amartha/config"
 	handler "github.com/delly/amartha/handler/http"
 	filestorage "github.com/delly/amartha/repository/file_storage"
@@ -17,6 +17,7 @@ import (
 	reconciliatonjob "github.com/delly/amartha/service/reconciliaton_job"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/julienschmidt/httprouter"
+	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -25,8 +26,8 @@ func main() {
 	cfg, err := config.NewConfig(".env")
 	checkError(err)
 
-	common.SetupLogger(cfg.Env)
-	logger := common.Logger()
+	zap.ReplaceGlobals(logger.New(cfg.Env))
+	logger := zap.L()
 	logger.Info("Connecting to database...")
 	connStr := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
 		cfg.Database.User,

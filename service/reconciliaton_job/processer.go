@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/delly/amartha/common"
+	"github.com/delly/amartha/common/logger"
 	"github.com/delly/amartha/entity"
 	filestorage "github.com/delly/amartha/repository/file_storage"
 	dbgen "github.com/delly/amartha/repository/postgresql"
@@ -53,12 +54,13 @@ func NewProcesserService(repo ProcesserRepository, storage FileGetter) *Processe
 	return &ProcesserService{
 		repo:    repo,
 		storage: storage,
-		log:     common.Logger().With(zap.String("service", "reconciliation_job_processer"))}
+		log:     zap.L().With(zap.String("service", "reconciliation_job.processer")),
+	}
 }
 
 // Process process pending reconciliation job
 func (s *ProcesserService) Process(ctx context.Context) error {
-	log := s.logWithMethod("Process")
+	log := logger.WithMethod(s.log, "Process")
 	jobs, err := s.getPendingReconciliationJobs(ctx)
 	if err != nil {
 		log.Error("failed to get pending reconciliation jobs", zap.Error(err))
@@ -115,7 +117,7 @@ func (s *ProcesserService) saveFailedJob(ctx context.Context, job *entity.Reconc
 }
 
 func (s *ProcesserService) processReconciliationJob(ctx context.Context, job *entity.ReconciliationJob) error {
-	log := s.logWithMethod("processReconciliationJob")
+	log := logger.WithMethod(s.log, "processReconciliationJob")
 	systemTrxFile, bankFiles, err := s.getCSVFiles(ctx, job)
 	if err != nil {
 		log.Error("failed to get csv files", zap.Error(err), zap.Int64("job_id", job.ID))
@@ -342,8 +344,4 @@ func (s *ProcesserService) getPendingReconciliationJobs(ctx context.Context) ([]
 	}
 
 	return result, nil
-}
-
-func (s *ProcesserService) logWithMethod(method string) *zap.Logger {
-	return s.log.With(zap.String("method", method))
 }
