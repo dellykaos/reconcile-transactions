@@ -16,6 +16,9 @@ The tech stack used for this services are:
   - [Run API](#3-run-api)
   - [Run Reconcile Job](#4-run-reconcile-job)
   - [Create Docker Container](#5-create-docker-container-for-deployment)
+- [Development](#development)
+  - [Generate Repository](#generate-repository)
+  - [Generate Mock](#generate-mock)
 - [Documentation](#documentation)
   - [Get List Reconcile Job](#get-reconciliation-list)
   - [Get Reconcile Job By ID](#get-reconciliation-job-request-by-id)
@@ -137,6 +140,28 @@ docker run --rm --name recon-job --env-file .env --platform=linux/amd64 delly/am
 ```
 
 If you want to run via dockerized application, make sure you have configure the file storage to use GCS Bucket since local storage would not shared the file to each container, unless you configure the directory of uploaded file to be shared between container.
+
+## Development
+
+### Generate Repository
+
+To generate repository, you need to install `sqlc` and `dbgen` so the repository code can be generated based on SQL queries provided in dir `db/queries`. This repository use `sqlc version 1.22.0`. Installation `sqlc` can be read [here](https://docs.sqlc.dev/en/latest/overview/install.html).
+
+Command to generate repository
+
+```shell
+sqlc generate
+```
+
+### Generate Mock
+
+To generate mock from interface defined, you need to install `mockgen` from `https://github.com/uber-go/mock`.
+
+Command to generate mock
+
+```shell
+./bin/generate-mock.sh
+```
 
 ## Documentation
 
