@@ -33,6 +33,21 @@ cp env.sample .env
 
 Fill all required configuration needed.
 
+```text
+ENV=development
+
+DB_HOST=localhost # your database host
+DB_PORT=5432 # your database port
+DB_USER= # your database user
+DB_PASS= # your database password
+DB_NAME= # your database name
+
+SERVER_PORT=8080 # server API port
+
+USE_LOCAL_STORAGE=true # use local storage as file storage
+LOCAL_STORAGE_DIR=/temp_storage # dir location to store uploaded csv files, currently would use path $CWD/$LOCAL_STORAGE_DIR
+```
+
 ### 2. Setup database
 
 Please make sure you have PostgreSQL 14.8 installed and `golang-migrate` CLI for PostgreSQL is installed.
