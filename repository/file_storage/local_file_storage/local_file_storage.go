@@ -3,11 +3,9 @@ package localfilestorage
 import (
 	"bytes"
 	"context"
-	"crypto/rand"
 	"fmt"
 	"os"
 	"path/filepath"
-	"time"
 
 	filestorage "github.com/delly/amartha/repository/file_storage"
 )
@@ -28,13 +26,13 @@ func NewStorage(storagePath string) *Storage {
 
 // Store is a function to store file to local storage
 func (lfs *Storage) Store(_ context.Context, file *filestorage.File) (string, error) {
-	uniqueFileDirectory := lfs.generateUniqueFileDirectory()
-	if err := os.MkdirAll(uniqueFileDirectory, os.ModePerm); err != nil {
+	targetDir := filepath.Join(lfs.storagePath, file.Dir)
+	if err := os.MkdirAll(targetDir, os.ModePerm); err != nil {
 		return "", fmt.Errorf("failed to create storage directory: %w", err)
 	}
 
-	uniqueFilePath := filepath.Join(uniqueFileDirectory, file.Name)
-	outFile, err := os.Create(uniqueFilePath)
+	targetPath := filepath.Join(targetDir, file.Name)
+	outFile, err := os.Create(targetPath)
 	if err != nil {
 		return "", fmt.Errorf("failed to create file: %w", err)
 	}
@@ -44,7 +42,7 @@ func (lfs *Storage) Store(_ context.Context, file *filestorage.File) (string, er
 		return "", fmt.Errorf("failed to write file content: %w", err)
 	}
 
-	return uniqueFilePath, nil
+	return targetPath, nil
 }
 
 // Get is a function to get file from local storage
@@ -69,25 +67,4 @@ func (lfs *Storage) Get(_ context.Context, filePath string) (*filestorage.File, 
 		Name: stat.Name(),
 		Buf:  bytes.NewBuffer(buf),
 	}, nil
-}
-
-// TODO: Move generation unique path to service layer.
-// Repository should not store any business logic.
-func (lfs *Storage) generateUniqueFileDirectory() string {
-	timestamp := time.Now().UnixNano()
-	randomString := lfs.generateRandomString(8)
-	uniqueFileDirectory := fmt.Sprintf("%d_%s", timestamp, randomString)
-	return filepath.Join(lfs.storagePath, uniqueFileDirectory)
-}
-
-func (lfs *Storage) generateRandomString(n int) string {
-	const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-	bytes := make([]byte, n)
-	if _, err := rand.Read(bytes); err != nil {
-		panic(err)
-	}
-	for i := range bytes {
-		bytes[i] = letters[bytes[i]%byte(len(letters))]
-	}
-	return string(bytes)
 }

@@ -3,6 +3,8 @@ package reconciliatonjob
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
+	"fmt"
 	"time"
 
 	"github.com/delly/amartha/common/logger"
@@ -71,8 +73,10 @@ func NewCreatorService(repo CreatorRepository,
 // Create create reconciliation job
 func (s *CreatorService) Create(ctx context.Context, params *CreateParams) (*entity.ReconciliationJob, error) {
 	log := logger.WithMethod(s.log, "Create")
+	dir := s.generateUniqueFileDirectory()
 	path, err := s.fileRepo.Store(ctx, &filestorage.File{
 		Name: params.SystemTransactionCsv.Name,
+		Dir:  dir,
 		Buf:  params.SystemTransactionCsv.Buf,
 	})
 	if err != nil {
@@ -84,6 +88,7 @@ func (s *CreatorService) Create(ctx context.Context, params *CreateParams) (*ent
 	for _, v := range params.BankTransactionCsvs {
 		path, err := s.fileRepo.Store(ctx, &filestorage.File{
 			Name: v.File.Name,
+			Dir:  dir,
 			Buf:  v.File.Buf,
 		})
 		if err != nil {
@@ -124,4 +129,23 @@ func (p *CreateParams) convertBankTransactionFilesToEntity() []entity.BankTransa
 	}
 
 	return res
+}
+
+func (s *CreatorService) generateUniqueFileDirectory() string {
+	timestamp := time.Now().UnixNano()
+	randomString := s.generateRandomString(8)
+	uniqueFileDirectory := fmt.Sprintf("%d_%s", timestamp, randomString)
+	return uniqueFileDirectory
+}
+
+func (s *CreatorService) generateRandomString(n int) string {
+	const letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+	bytes := make([]byte, n)
+	if _, err := rand.Read(bytes); err != nil {
+		panic(err)
+	}
+	for i := range bytes {
+		bytes[i] = letters[bytes[i]%byte(len(letters))]
+	}
+	return string(bytes)
 }
