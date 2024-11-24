@@ -46,6 +46,11 @@ SERVER_PORT=8080 # server API port
 
 USE_LOCAL_STORAGE=true # use local storage as file storage
 LOCAL_STORAGE_DIR=/temp_storage # dir location to store uploaded csv files, currently would use path $CWD/$LOCAL_STORAGE_DIR
+
+# This GCS Config would not be used if USE_LOCAL_STORAGE value is true
+GCS_KEY_JSON= # GCS Secret Key JSON to access Bucket
+GCS_BUCKET= # GCS Bucket Name
+GCS_PROJECT_ID= # GCS Project ID to store the file
 ```
 
 ### 2. Setup database
