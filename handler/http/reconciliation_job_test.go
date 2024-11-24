@@ -1,10 +1,14 @@
 package http_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"io"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 	"time"
 
@@ -18,8 +22,22 @@ import (
 )
 
 var (
-	id             = int64(1)
-	now            = time.Now()
+	id                   = int64(1)
+	now                  = time.Now()
+	simpleEntityReconJob = &entity.SimpleReconciliationJob{
+		ID:                       id,
+		Status:                   entity.ReconciliationJobStatus("SUCCESS"),
+		SystemTransactionCsvPath: "path_to_file",
+		BankTransactionCsvPaths: []entity.BankTransactionCsv{
+			{
+				BankName: "BCA",
+				FilePath: "path_to_file_bca",
+			},
+		},
+		DiscrepancyThreshold: 0.1,
+		StartDate:            now,
+		EndDate:              now,
+	}
 	entityReconJob = &entity.ReconciliationJob{
 		ID:                       id,
 		Status:                   entity.ReconciliationJobStatus("SUCCESS"),
@@ -135,11 +153,11 @@ func (s *ReconciliationJobHandlerTestSuite) TestGetAllReconciliationJob() {
 	s.Run("success", func() {
 		total := int64(1)
 		s.mockFinderService.EXPECT().Count(ctx).Return(total, nil)
-		s.mockFinderService.EXPECT().FindAll(ctx, int32(10), int32(0)).Return([]*entity.ReconciliationJob{entityReconJob}, nil)
+		s.mockFinderService.EXPECT().FindAll(ctx, int32(10), int32(0)).Return([]*entity.SimpleReconciliationJob{simpleEntityReconJob}, nil)
 
 		resp := s.executeReq(req)
 
-		jsonRecon, _ := json.Marshal([]*entity.ReconciliationJob{entityReconJob})
+		jsonRecon, _ := json.Marshal([]*entity.SimpleReconciliationJob{simpleEntityReconJob})
 		bodyJson := resp.Body.String()
 		s.Equal(http.StatusOK, resp.Code)
 		s.Contains(bodyJson, string(jsonRecon))
@@ -160,12 +178,12 @@ func (s *ReconciliationJobHandlerTestSuite) TestGetAllReconciliationJob() {
 		req, _ := http.NewRequest(http.MethodGet, "/reconciliations?offset=-1&limit=1000", nil)
 		total := int64(1)
 		s.mockFinderService.EXPECT().Count(ctx).Return(total, nil)
-		s.mockFinderService.EXPECT().FindAll(ctx, int32(100), int32(0)).Return([]*entity.ReconciliationJob{entityReconJob}, nil)
+		s.mockFinderService.EXPECT().FindAll(ctx, int32(100), int32(0)).Return([]*entity.SimpleReconciliationJob{simpleEntityReconJob}, nil)
 
 		resp := s.executeReq(req)
 
 		bodyJson := resp.Body.String()
-		jsonRecon, _ := json.Marshal([]*entity.ReconciliationJob{entityReconJob})
+		jsonRecon, _ := json.Marshal([]*entity.SimpleReconciliationJob{simpleEntityReconJob})
 		s.Equal(http.StatusOK, resp.Code)
 		s.Contains(bodyJson, string(jsonRecon))
 	})
@@ -189,8 +207,162 @@ func (s *ReconciliationJobHandlerTestSuite) TestGetAllReconciliationJob() {
 	})
 }
 
+func (s *ReconciliationJobHandlerTestSuite) TestCreateReconciliationJob() {
+	ctx := context.Background()
+
+	s.Run("success", func() {
+		req := s.buildCreatorReq(func(mw *multipart.Writer) {
+			mw.WriteField("discrepancy_threshold", "0.1")
+			mw.WriteField("start_date", now.Format("2006-01-02"))
+			mw.WriteField("end_date", now.Format("2006-01-02"))
+			mw.WriteField("bank_names", "BCA")
+			s.createFormFile(mw, "system_transaction_file", "system_trx.csv")
+			s.createFormFile(mw, "bank_transaction_files", "bca_trx.csv")
+		})
+		s.mockCreatorService.EXPECT().Create(ctx, gomock.Any()).Return(entityReconJob, nil)
+
+		resp := s.executeReq(req)
+
+		s.Equal(http.StatusCreated, resp.Code)
+	})
+
+	s.Run("error on create", func() {
+		req := s.buildCreatorReq(func(mw *multipart.Writer) {
+			mw.WriteField("discrepancy_threshold", "0.1")
+			mw.WriteField("start_date", now.Format("2006-01-02"))
+			mw.WriteField("end_date", now.Format("2006-01-02"))
+			mw.WriteField("bank_names", "BCA")
+			s.createFormFile(mw, "system_transaction_file", "system_trx.csv")
+			s.createFormFile(mw, "bank_transaction_files", "bca_trx.csv")
+		})
+		s.mockCreatorService.EXPECT().Create(ctx, gomock.Any()).Return(nil, assert.AnError)
+
+		resp := s.executeReq(req)
+
+		s.Equal(http.StatusInternalServerError, resp.Code)
+	})
+
+	s.Run("empty payload", func() {
+		req, _ := http.NewRequest(http.MethodPost, "/reconciliations", nil)
+
+		resp := s.executeReq(req)
+
+		s.Equal(http.StatusBadRequest, resp.Code)
+	})
+
+	s.Run("invalid discrepancy threshold", func() {
+		req := s.buildCreatorReq(func(mw *multipart.Writer) {
+			mw.WriteField("discrepancy_threshold", "-0.1")
+			mw.WriteField("start_date", now.Format("2006-01-02"))
+			mw.WriteField("end_date", now.Format("2006-01-02"))
+			mw.WriteField("bank_names", "BCA")
+			s.createFormFile(mw, "system_transaction_file", "system_trx.csv")
+			s.createFormFile(mw, "bank_transaction_files", "bca_trx.csv")
+		})
+		s.mockCreatorService.EXPECT().Create(ctx, gomock.Any()).Return(entityReconJob, nil)
+
+		resp := s.executeReq(req)
+
+		s.Equal(http.StatusCreated, resp.Code)
+	})
+
+	s.Run("invalid start date", func() {
+		req := s.buildCreatorReq(func(mw *multipart.Writer) {
+			mw.WriteField("discrepancy_threshold", "0.1")
+			mw.WriteField("start_date", now.AddDate(0, 0, 1).Format("2006-01-02"))
+			mw.WriteField("end_date", now.Format("2006-01-02"))
+			mw.WriteField("bank_names", "BCA")
+			s.createFormFile(mw, "system_transaction_file", "system_trx.csv")
+			s.createFormFile(mw, "bank_transaction_files", "bca_trx.csv")
+		})
+
+		resp := s.executeReq(req)
+
+		s.Equal(http.StatusBadRequest, resp.Code)
+	})
+
+	s.Run("invalid length of bank names and bank transaction files", func() {
+		req := s.buildCreatorReq(func(mw *multipart.Writer) {
+			mw.WriteField("discrepancy_threshold", "0.1")
+			mw.WriteField("start_date", now.Format("2006-01-02"))
+			mw.WriteField("end_date", now.Format("2006-01-02"))
+			mw.WriteField("bank_names", "BCA")
+			mw.WriteField("bank_names", "BRI")
+			s.createFormFile(mw, "system_transaction_file", "system_trx.csv")
+			s.createFormFile(mw, "bank_transaction_files", "bca_trx.csv")
+		})
+
+		resp := s.executeReq(req)
+
+		s.Equal(http.StatusBadRequest, resp.Code)
+	})
+
+	s.Run("empty bank transaction files", func() {
+		req := s.buildCreatorReq(func(mw *multipart.Writer) {
+			mw.WriteField("discrepancy_threshold", "0.1")
+			mw.WriteField("start_date", now.Format("2006-01-02"))
+			mw.WriteField("end_date", now.Format("2006-01-02"))
+			mw.WriteField("bank_names", "BCA")
+			s.createFormFile(mw, "system_transaction_file", "system_trx.csv")
+		})
+
+		resp := s.executeReq(req)
+
+		s.Equal(http.StatusBadRequest, resp.Code)
+	})
+
+	s.Run("invalid system transaction file", func() {
+		req := s.buildCreatorReq(func(mw *multipart.Writer) {
+			mw.WriteField("discrepancy_threshold", "0.1")
+			mw.WriteField("start_date", now.Format("2006-01-02"))
+			mw.WriteField("end_date", now.Format("2006-01-02"))
+			mw.WriteField("bank_names", "BCA")
+			s.createFormFile(mw, "system_transaction_file", "test.json")
+			s.createFormFile(mw, "bank_transaction_files", "bca_trx.csv")
+		})
+
+		resp := s.executeReq(req)
+
+		s.Equal(http.StatusBadRequest, resp.Code)
+	})
+
+	s.Run("invalid bank transaction file", func() {
+		req := s.buildCreatorReq(func(mw *multipart.Writer) {
+			mw.WriteField("discrepancy_threshold", "0.1")
+			mw.WriteField("start_date", now.Format("2006-01-02"))
+			mw.WriteField("end_date", now.Format("2006-01-02"))
+			mw.WriteField("bank_names", "BCA")
+			s.createFormFile(mw, "system_transaction_file", "system_trx.csv")
+			s.createFormFile(mw, "bank_transaction_files", "test.json")
+		})
+
+		resp := s.executeReq(req)
+
+		s.Equal(http.StatusBadRequest, resp.Code)
+	})
+}
+
 func (s *ReconciliationJobHandlerTestSuite) executeReq(req *http.Request) *httptest.ResponseRecorder {
 	rr := httptest.NewRecorder()
 	s.router.ServeHTTP(rr, req)
 	return rr
+}
+
+func (s *ReconciliationJobHandlerTestSuite) buildCreatorReq(fn func(mw *multipart.Writer)) *http.Request {
+	var buf bytes.Buffer
+	mWriter := multipart.NewWriter(&buf)
+	fn(mWriter)
+	mWriter.Close()
+
+	req, _ := http.NewRequest(http.MethodPost, "/reconciliations", &buf)
+	req.Header.Set("Content-Type", mWriter.FormDataContentType())
+
+	return req
+}
+
+func (s *ReconciliationJobHandlerTestSuite) createFormFile(mw *multipart.Writer, fieldName, fileName string) {
+	f, _ := mw.CreateFormFile(fieldName, fileName)
+	file, _ := os.Open("../../test/data/" + fileName)
+	io.Copy(f, file)
+	file.Close()
 }
