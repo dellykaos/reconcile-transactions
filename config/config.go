@@ -12,6 +12,7 @@ type Config struct {
 	Database     DatabaseConfig
 	Server       ServerConfig
 	LocalStorage LocalStorageConfig
+	GCS          GCSConfig
 }
 
 // DatabaseConfig holds the configuration for the database.
@@ -31,6 +32,12 @@ type ServerConfig struct {
 type LocalStorageConfig struct {
 	UseLocal bool   `env:"USE_LOCAL_STORAGE"`
 	Dir      string `env:"LOCAL_STORAGE_DIR"`
+}
+
+type GCSConfig struct {
+	ProjectID string `env:"GCS_PROJECT_ID"`
+	Bucket    string `env:"GCS_BUCKET"`
+	KeyJSON   string `env:"GCS_KEY_JSON"`
 }
 
 // NewConfig creates an instance of Config.

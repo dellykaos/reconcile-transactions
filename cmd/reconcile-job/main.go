@@ -5,14 +5,17 @@ import (
 	"fmt"
 	"os"
 
+	"cloud.google.com/go/storage"
 	"github.com/delly/amartha/common/logger"
 	"github.com/delly/amartha/config"
 	filestorage "github.com/delly/amartha/repository/file_storage"
+	"github.com/delly/amartha/repository/file_storage/gcs"
 	localfilestorage "github.com/delly/amartha/repository/file_storage/local_file_storage"
 	dbgen "github.com/delly/amartha/repository/postgresql"
 	reconciliatonjob "github.com/delly/amartha/service/reconciliaton_job"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"go.uber.org/zap"
+	"google.golang.org/api/option"
 )
 
 func main() {
@@ -45,6 +48,11 @@ func main() {
 		checkError(err)
 		fileDir := fmt.Sprintf("%s%s", currentDir, cfg.LocalStorage.Dir)
 		fileStorage = localfilestorage.NewStorage(fileDir)
+	} else {
+		client, err := storage.NewClient(ctx, option.WithCredentialsJSON([]byte(cfg.GCS.KeyJSON)))
+		checkError(err)
+		bucket := client.Bucket(cfg.GCS.Bucket)
+		fileStorage = gcs.NewBucket(bucket)
 	}
 	reconProcesserService := reconciliatonjob.NewProcesserService(querier, fileStorage)
 
