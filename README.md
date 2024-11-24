@@ -135,7 +135,7 @@ To try running your docker container deployment Reconcile Job
 docker run --rm --name recon-job --env-file .env --platform=linux/amd64 delly/amartha-recon-job:demo-amd64
 ```
 
-Since file storage implementation used in this project is using local storage, so to ensure that create new request Reconcile and Process Reconcile Job works, you need to implement contract `FileStorageRepository` with storage that can be accessed by the docker container, for example store it in Google Cloud Storage, or something like that.
+If you want to run via dockerized application, make sure you have configure the file storage to use GCS Bucket since local storage would not shared the file to each container, unless you configure the directory of uploaded file to be shared between container.
 
 ## Documentation
 
