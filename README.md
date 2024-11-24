@@ -6,6 +6,7 @@ The tech stack used for this services are:
 
 - Golang version 1.23.0
 - PostgreSQL 14.8
+- Google Cloud Storage (optional)
 
 **Table of Content:**
 
