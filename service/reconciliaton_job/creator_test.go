@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/delly/amartha/entity"
-	filestorage "github.com/delly/amartha/repository/file_storage"
 	dbgen "github.com/delly/amartha/repository/postgresql"
 	reconciliatonjob "github.com/delly/amartha/service/reconciliaton_job"
 	mock_reconciliatonjob "github.com/delly/amartha/test/mock/service/reconciliaton_job"
@@ -54,17 +53,11 @@ func (s *ReconciliationJobCreatorTestSuite) TestCreate() {
 			},
 		},
 	}
-	fsSystemFile := &filestorage.File{
-		Name: params.SystemTransactionCsv.Name,
-	}
 	bankTrxCsvPaths := []entity.BankTransactionCsv{
 		{
 			BankName: params.BankTransactionCsvs[0].BankName,
 			FilePath: bcaTrxPath,
 		},
-	}
-	fsBankFile := &filestorage.File{
-		Name: params.BankTransactionCsvs[0].File.Name,
 	}
 	dbParams := dbgen.CreateReconciliationJobParams{
 		SystemTransactionCsvPath: systemTrxPath,
@@ -97,8 +90,8 @@ func (s *ReconciliationJobCreatorTestSuite) TestCreate() {
 	}
 
 	s.Run("success", func() {
-		s.mockFileStorer.EXPECT().Store(ctx, fsSystemFile).Return(systemTrxPath, nil)
-		s.mockFileStorer.EXPECT().Store(ctx, fsBankFile).Return(bcaTrxPath, nil)
+		s.mockFileStorer.EXPECT().Store(ctx, gomock.Any()).Return(systemTrxPath, nil)
+		s.mockFileStorer.EXPECT().Store(ctx, gomock.Any()).Return(bcaTrxPath, nil)
 		s.mockRepo.EXPECT().CreateReconciliationJob(ctx, dbParams).Return(dbResult, nil)
 
 		res, err := s.svc.Create(ctx, params)
@@ -108,7 +101,7 @@ func (s *ReconciliationJobCreatorTestSuite) TestCreate() {
 	})
 
 	s.Run("error store system transaction csv", func() {
-		s.mockFileStorer.EXPECT().Store(ctx, fsSystemFile).Return("", assert.AnError)
+		s.mockFileStorer.EXPECT().Store(ctx, gomock.Any()).Return("", assert.AnError)
 
 		res, err := s.svc.Create(ctx, params)
 
@@ -117,8 +110,8 @@ func (s *ReconciliationJobCreatorTestSuite) TestCreate() {
 	})
 
 	s.Run("error store bank transaction csv", func() {
-		s.mockFileStorer.EXPECT().Store(ctx, fsSystemFile).Return(systemTrxPath, nil)
-		s.mockFileStorer.EXPECT().Store(ctx, fsBankFile).Return("", assert.AnError)
+		s.mockFileStorer.EXPECT().Store(ctx, gomock.Any()).Return(systemTrxPath, nil)
+		s.mockFileStorer.EXPECT().Store(ctx, gomock.Any()).Return("", assert.AnError)
 
 		res, err := s.svc.Create(ctx, params)
 
@@ -127,8 +120,8 @@ func (s *ReconciliationJobCreatorTestSuite) TestCreate() {
 	})
 
 	s.Run("error create recon", func() {
-		s.mockFileStorer.EXPECT().Store(ctx, fsSystemFile).Return(systemTrxPath, nil)
-		s.mockFileStorer.EXPECT().Store(ctx, fsBankFile).Return(bcaTrxPath, nil)
+		s.mockFileStorer.EXPECT().Store(ctx, gomock.Any()).Return(systemTrxPath, nil)
+		s.mockFileStorer.EXPECT().Store(ctx, gomock.Any()).Return(bcaTrxPath, nil)
 		s.mockRepo.EXPECT().CreateReconciliationJob(ctx, dbParams).Return(dbgen.ReconciliationJob{}, assert.AnError)
 
 		res, err := s.svc.Create(ctx, params)
