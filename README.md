@@ -393,3 +393,7 @@ Why separate the process from the API Service, the reason is for better scalabil
 
 This flow is a Cron Job that can be configured to run every 5 minutes.
 The reason why I choose Cron Job instead of Event Driven approach is for the sake of simplicity of the project, if the requirement needs is to process reconciliation in near real time, then it would be better to consider using Event Driven approach like Google PubSub, Apache Kafka, RabbitMQ, etc.
+
+### Improvement
+
+Since response from API returning absolute path of the uploaded CSV, if the bucket used is not private, then to improve security, we can return signed url of the file so it can be accessed only by specified users.
