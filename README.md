@@ -324,7 +324,8 @@ Form Data:
 - start_date (date)
 - end_date (date)
 - system_transaction_file (file)
-- discrepancy_threshold (float) - in percentage
+- discrepancy_threshold (float, optional) - in percentage, this would be used if we want to tolerate discrepancy amount with specific range, if you want to make it strict without tolerating difference, then set it to 0 or leave it as empty.
+  - Default: 0
   - Min: 0
 - bank_names (string) - can be multiple
 - bank_transaction_files (file) - can be multiple
