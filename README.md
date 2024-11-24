@@ -363,3 +363,8 @@ Invalid Params: Status Code 400 (Bad Request)
 ### Reconciliation Job Process
 
 ![reconciliation job process](https://www.planttext.com/api/plantuml/png/ZL513i8m3Blt5Vx0Fh03cc3Ym94VT5q6GwMPsbJmVB9nO1i8k5HAxDY9MoMnKVBLuqYEW-izuS0DzfvlnaWlMdz2fjukSXXRnGRrjiI91DPxn173XPjawYqAHUViKd79CQofrWi2ppl0qkLDYEwz6FA9PbFeE8TMPptpe4K4MNT-4HHPwwvbXyYEKlenCrwSXzRAp1sQfkG4OQJi9X5TeBEQNJk9VClZATOkR6awvQyOb6agVVKlpGC0)
+
+Why separate the process from the API Service, the reason is for better scalability, since the file size of the CSV may vary, it's better to run possible long running process to asynchrounous mechanism using Cron Job or Event Driven, so it would not blocking user experience.
+
+This flow is a Cron Job that can be configured to run every 5 minutes.
+The reason why I choose Cron Job instead of Event Driven approach is for the sake of simplicity of the project, if the requirement needs is to process reconciliation in near real time, then it would be better to consider using Event Driven approach like Google PubSub, Apache Kafka, RabbitMQ, etc.
