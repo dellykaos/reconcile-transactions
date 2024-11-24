@@ -203,7 +203,8 @@ func (s *ProcesserService) processReconciliation(job *entity.ReconciliationJob,
 					minDiscrepancy := trx.Amount - discrepancyThreshold
 					maxDiscrepancy := trx.Amount + discrepancyThreshold
 					bankAmountInThreshold := bankTrx.Amount >= minDiscrepancy && bankTrx.Amount <= maxDiscrepancy
-					if bankAmountInThreshold {
+					sameTrxType := trx.Type == bankTrx.Type
+					if bankAmountInThreshold && sameTrxType {
 						bankTrxIdx = idx
 						found = true
 						break

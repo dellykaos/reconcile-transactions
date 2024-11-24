@@ -223,10 +223,10 @@ func (s *ReconciliationJobProcessorTestSuite) TestProcess_Success() {
 			Buf:  fetchSystemFile("bca_trx.csv"),
 		}
 		expectedResult := entity.ReconciliationResult{
-			TotalTransactionProcessed: 13,
+			TotalTransactionProcessed: 14,
 			TotalTransactionMatched:   9,
-			TotalTransactionUnmatched: 4,
-			TotalDiscrepancyAmount:    212963022,
+			TotalTransactionUnmatched: 5,
+			TotalDiscrepancyAmount:    213003020,
 			MissingTransactions: []entity.Transaction{
 				{
 					ID:     "ABC-127",
@@ -252,8 +252,23 @@ func (s *ReconciliationJobProcessorTestSuite) TestProcess_Success() {
 					Type:   entity.TxTypeDebit,
 					Time:   parseTime("2024-11-07T14:00:23Z"),
 				},
+				{
+					ID:     "ABC-136",
+					Amount: 19999,
+					Type:   entity.TxTypeCredit,
+					Time:   parseTime("2024-11-23T04:22:12Z"),
+				},
 			},
-			MissingBankTransactions: map[string][]entity.Transaction{},
+			MissingBankTransactions: map[string][]entity.Transaction{
+				"BCA": {
+					{
+						ID:     "BCA-132",
+						Amount: 19999,
+						Type:   entity.TxTypeDebit,
+						Time:   parseTime("2024-11-23T00:00:00Z"),
+					},
+				},
+			},
 		}
 		saveParams := dbgen.SaveSuccessReconciliationJobParams{
 			ID: rj.ID,
@@ -272,7 +287,7 @@ func (s *ReconciliationJobProcessorTestSuite) TestProcess_Success() {
 	s.Run("success process reconciliation job without discrepancy", func() {
 		rj := dbReconJob
 		rj.StartDate = time.Date(2024, 11, 1, 0, 0, 0, 0, time.UTC)
-		rj.EndDate = time.Date(2024, 11, 23, 0, 0, 0, 0, time.UTC)
+		rj.EndDate = time.Date(2024, 11, 22, 0, 0, 0, 0, time.UTC)
 		rj.DiscrepancyThreshold = 0
 		bankCsvs := []entity.BankTransactionCsv{
 			{
@@ -298,8 +313,8 @@ func (s *ReconciliationJobProcessorTestSuite) TestProcess_Success() {
 			Buf:  fetchSystemFile("bri_trx.csv"),
 		}
 		expectedResult := entity.ReconciliationResult{
-			TotalTransactionProcessed: 13,
-			TotalTransactionMatched:   13,
+			TotalTransactionProcessed: 12,
+			TotalTransactionMatched:   12,
 			TotalTransactionUnmatched: 0,
 			TotalDiscrepancyAmount:    0,
 			MissingTransactions:       []entity.Transaction{},
